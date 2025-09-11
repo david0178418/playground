@@ -23,7 +23,7 @@ jobs:
         run: bun install
 
       - name: Build project
-        run: bun build
+        run: bun bundle
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
