@@ -8,15 +8,13 @@ Default to using Bun instead of Node.js.
 - Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
 - Bun automatically loads .env, so don't use dotenv.
 
-## APIs
+## Development Scripts
 
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
-- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
-- `Bun.redis` for Redis. Don't use `ioredis`.
-- `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
+This is a client-side React application. Use these scripts:
+
+- `bun run dev` - Start development server with hot reloading
+- `bun run build` - Build for production
+- `bun run start` - Serve production build
 
 ## Testing
 
@@ -30,77 +28,53 @@ test("hello world", () => {
 });
 ```
 
-## Frontend
+## Frontend Development
 
-Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.
-
-Server:
-
-```ts#index.ts
-import index from "./index.html"
-
-Bun.serve({
-  routes: {
-    "/": index,
-    "/api/users/:id": {
-      GET: (req) => {
-        return new Response(JSON.stringify({ id: req.params.id }));
-      },
-    },
-  },
-  // optional websocket support
-  websocket: {
-    open: (ws) => {
-      ws.send("Hello, world!");
-    },
-    message: (ws, message) => {
-      ws.send(message);
-    },
-    close: (ws) => {
-      // handle close
-    }
-  },
-  development: {
-    hmr: true,
-    console: true,
-  }
-})
-```
+This application uses Bun's built-in bundler with HTML entry points. Entry point is `src/index.html`.
 
 HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
 
-```html#index.html
-<html>
+Current structure:
+
+```html#src/index.html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="./logo.svg" />
+    <title>Bun + React</title>
+  </head>
   <body>
-    <h1>Hello, world!</h1>
+    <div id="root"></div>
     <script type="module" src="./frontend.tsx"></script>
   </body>
 </html>
 ```
 
-With the following `frontend.tsx`:
+The `frontend.tsx` entry point:
 
-```tsx#frontend.tsx
-import React from "react";
-
-// import .css files directly and it works
-import './index.css';
-
+```tsx#src/frontend.tsx
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { App } from "./App";
 
-const root = createRoot(document.body);
+const elem = document.getElementById("root")!;
+const app = (
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
 
-export default function Frontend() {
-  return <h1>Hello, world!</h1>;
+// Hot module reloading support
+if (import.meta.hot) {
+  const root = (import.meta.hot.data.root ??= createRoot(elem));
+  root.render(app);
+} else {
+  createRoot(elem).render(app);
 }
-
-root.render(<Frontend />);
 ```
 
-Then, run index.ts
-
-```sh
-bun --hot ./index.ts
-```
+Dependencies include React 19, Material-UI, and Emotion for styling.
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.md`.
