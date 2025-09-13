@@ -4,16 +4,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun --hot src/index.html",
+    "dev": "bun src/index.html",
     "bundle": "bun build ./src/index.html --outdir=dist --sourcemap --target=browser --minify --define:process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*'",
     "start": "NODE_ENV=production bun src/index.html"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.2",
     "@mui/material": "^7.3.2",
     "react": "^19",
-    "react-dom": "^19"
+    "react-dom": "^19",
+    "react-router": "^7.9.1"
   },
   "devDependencies": {
     "@types/react": "^19",
