@@ -8,7 +8,7 @@ export default function App() {
 			<List>
 				<ListItem component={Link} to="/foo">
 					<ListItemText>
-						Foo link 3
+						Link to Foo
 					</ListItemText>
 				</ListItem>
 			</List>
