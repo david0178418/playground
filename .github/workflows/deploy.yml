@@ -23,6 +23,8 @@ jobs:
         run: bun install
 
       - name: Build project
+        env:
+          PUBLIC_URL: /${{ github.event.repository.name }}
         run: bun bundle
 
       - name: Deploy to GitHub Pages

@@ -7,7 +7,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 export default function RouteMap() {
 	return (
-		<BrowserRouter>
+		<BrowserRouter basename={process.env['PUBLIC_URL']}>
 			<Routes>
 				<Route
 					index
