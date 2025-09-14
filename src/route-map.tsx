@@ -5,9 +5,11 @@ import Foo from "./projects/foo/foo";
 import { Fab } from "@mui/material";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
+const basename = getBasename();
+
 export default function RouteMap() {
 	return (
-		<BrowserRouter basename={process.env['PUBLIC_URL']}>
+		<BrowserRouter basename={basename}>
 			<Routes>
 				<Route
 					index
@@ -41,4 +43,14 @@ function ProjectLayout() {
 			<Outlet />
 		</>
 	)
+}
+
+
+function getBasename() {
+	try {
+		// @ts-ignore
+		return process.env.PUBLIC_URL;
+	} catch (error) {
+		return '/';
+	}
 }
