@@ -1,14 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { Container, Box, Alert, Snackbar } from '@mui/material';
-import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import type { DungeonMap, GenerationSettings } from '../types';
 import { generateDungeon, DEFAULT_GENERATION_SETTINGS } from '../utils/dungeonGenerator';
 import { DungeonCanvas } from './DungeonCanvas';
 import { GenerationControls } from './GenerationControls';
 import { RoomDetails } from './RoomDetails';
-import { theme } from '../theme';
-
 
 export const DungeonGenerator: React.FC = () => {
 	const [dungeonMap, setDungeonMap] = useState<DungeonMap | null>(null);

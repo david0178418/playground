@@ -1,6 +1,5 @@
 import type { ConnectionPoint } from '../types';
-import { ExitDirection } from '../types';
-import { RENDERING, COLORS } from '../constants';
+import { RENDERING } from '../constants';
 
 export interface DoorDimensions {
 	x: number;

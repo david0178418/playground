@@ -1,7 +1,6 @@
 import type {
 	Corridor,
 	Position,
-	ConnectionPoint,
 	Room,
 } from '../types';
 import {
@@ -71,12 +70,20 @@ export class CorridorGenerator {
 
 		while (openSet.length > 0) {
 			// Find node with lowest fCost
-			let currentNode = openSet[0];
+			const firstNode = openSet[0];
+			if (!firstNode) {
+				throw new Error('Pathfinding error: openSet corrupted');
+			}
+			let currentNode = firstNode;
 			let currentIndex = 0;
-			
+
 			for (let i = 1; i < openSet.length; i++) {
-				if (openSet[i].fCost < currentNode.fCost) {
-					currentNode = openSet[i];
+				const node = openSet[i];
+				if (!node) {
+					throw new Error('Pathfinding error: openSet corrupted');
+				}
+				if (node.fCost < currentNode.fCost) {
+					currentNode = node;
 					currentIndex = i;
 				}
 			}
@@ -195,10 +202,15 @@ export class CorridorGenerator {
 		for (let i = 1; i < path.length; i++) {
 			const current = path[i];
 			const previous = path[i - 1];
+			if (!current || !previous) {
+				throw new Error('Path generation error: invalid path structure');
+			}
 			const next = i + 1 < path.length ? path[i + 1] : null;
 
 			// Check if direction changes or we're at the end
-			if (next === null || this.getDirection(previous, current) !== this.getDirection(current, next)) {
+			const shouldCreateSegment = !next ||
+				(next && this.getDirection(previous, current) !== this.getDirection(current, next));
+			if (shouldCreateSegment) {
 				// Create corridor segment
 				const segmentPath = path.slice(currentSegmentStart, i + 1);
 				const corridor = this.createCorridorFromPath(segmentPath);
@@ -229,6 +241,9 @@ export class CorridorGenerator {
 
 		const start = path[0];
 		const end = path[path.length - 1];
+		if (!start || !end) {
+			throw new Error('Corridor creation error: invalid path endpoints');
+		}
 		const direction = this.getDirection(start, end);
 		const length = path.length;
 

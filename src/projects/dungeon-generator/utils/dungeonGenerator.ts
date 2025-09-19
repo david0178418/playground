@@ -1,4 +1,4 @@
-import { DungeonMap, GenerationSettings } from '../types';
+import type { DungeonMap, GenerationSettings } from '../types';
 import { generateGeomorphDungeon } from './geomorphDungeonGenerator';
 import { GENERATION_DEFAULTS } from '../constants';
 

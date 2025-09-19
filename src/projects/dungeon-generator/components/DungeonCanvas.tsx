@@ -42,8 +42,10 @@ export const DungeonCanvas: React.FC<DungeonCanvasProps> = ({
 		if (template) {
 			// Render room squares with light inner grid lines
 			for (let row = 0; row < template.gridPattern.length; row++) {
-				for (let col = 0; col < template.gridPattern[row].length; col++) {
-					if (template.gridPattern[row][col]) {
+				const gridRow = template.gridPattern[row];
+				if (!gridRow) continue;
+				for (let col = 0; col < gridRow.length; col++) {
+					if (gridRow[col]) {
 						roomElements.push(
 							<rect
 								key={`${room.id}-${row}-${col}`}
@@ -64,8 +66,10 @@ export const DungeonCanvas: React.FC<DungeonCanvasProps> = ({
 
 			// Draw thick black outer wall edges
 			for (let row = 0; row < template.gridPattern.length; row++) {
-				for (let col = 0; col < template.gridPattern[row].length; col++) {
-					if (template.gridPattern[row][col]) {
+				const gridRow = template.gridPattern[row];
+				if (!gridRow) continue;
+				for (let col = 0; col < gridRow.length; col++) {
+					if (gridRow[col]) {
 						const squareX = x + col * gridSquareSize;
 						const squareY = y + row * gridSquareSize;
 
@@ -102,7 +106,7 @@ export const DungeonCanvas: React.FC<DungeonCanvasProps> = ({
 						}
 
 						// Left edge - if no room square to the left
-						if (col === 0 || !template.gridPattern[row]?.[col - 1]) {
+						if (col === 0 || !gridRow[col - 1]) {
 							roomElements.push(
 								<line
 									key={`${room.id}-left-${row}-${col}`}
@@ -117,7 +121,7 @@ export const DungeonCanvas: React.FC<DungeonCanvasProps> = ({
 						}
 
 						// Right edge - if no room square to the right
-						if (col === template.gridPattern[row].length - 1 || !template.gridPattern[row]?.[col + 1]) {
+						if (col === gridRow.length - 1 || !gridRow[col + 1]) {
 							roomElements.push(
 								<line
 									key={`${room.id}-right-${row}-${col}`}

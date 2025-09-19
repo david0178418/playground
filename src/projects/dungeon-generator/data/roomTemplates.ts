@@ -14,7 +14,9 @@ function createGridPattern(width: number, height: number, pattern: string[]): bo
 	for (let y = 0; y < height; y++) {
 		grid[y] = [];
 		for (let x = 0; x < width; x++) {
-			grid[y][x] = pattern[y] ? pattern[y][x] === '#' : false;
+			const firstGridIndex = grid[y];
+			if(!firstGridIndex) throw Error('no grid cell')
+			firstGridIndex[x] = pattern[y]?.[x] === '#';
 		}
 	}
 	return grid;
@@ -307,5 +309,13 @@ export function getRoomTemplatesByType(type: RoomType): RoomTemplate[] {
 
 export function getRandomRoomTemplate(type: RoomType): RoomTemplate {
 	const templates = getRoomTemplatesByType(type);
-	return templates[Math.floor(Math.random() * templates.length)];
+	if (templates.length === 0) {
+		throw new Error(`No room templates found for type: ${type}`);
+	}
+	const randomIndex = Math.floor(Math.random() * templates.length);
+	const template = templates[randomIndex];
+	if (!template) {
+		throw new Error(`Template selection error for type: ${type}`);
+	}
+	return template;
 }

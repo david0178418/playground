@@ -17,8 +17,6 @@ import {
 import { CorridorGenerator } from './corridorGenerator';
 import {
 	getRandomRoomTemplate,
-	getRoomTemplatesByType,
-	ALL_ROOM_TEMPLATES,
 } from '../data/roomTemplates';
 import { isConnectionPointConnected, connectConnectionPoint } from './connectionHelpers';
 
@@ -175,45 +173,6 @@ export class GeomorphDungeonGenerator {
 		return true;
 	}
 
-	private findRoomsNearEdges(): Room[] {
-		const edgeBuffer = 5; // Consider rooms within 5 squares of an edge as "near edge"
-		return this.rooms.filter(room => {
-			return room.position.x <= edgeBuffer ||
-						 room.position.y <= edgeBuffer ||
-						 room.position.x + room.width >= this.settings.gridSize - edgeBuffer ||
-						 room.position.y + room.height >= this.settings.gridSize - edgeBuffer;
-		});
-	}
-
-	private findBestEntrancePosition(targetRoom: Room): { position: Position; direction: ExitDirection } | null {
-		const candidates: { position: Position; direction: ExitDirection; distance: number }[] = [];
-
-		// Check each edge of the map
-		const edges = [
-			{ side: 'north', pos: { x: targetRoom.position.x + Math.floor(targetRoom.width / 2), y: 0 }, dir: ExitDirection.South },
-			{ side: 'south', pos: { x: targetRoom.position.x + Math.floor(targetRoom.width / 2), y: this.settings.gridSize - 1 }, dir: ExitDirection.North },
-			{ side: 'east', pos: { x: this.settings.gridSize - 1, y: targetRoom.position.y + Math.floor(targetRoom.height / 2) }, dir: ExitDirection.West },
-			{ side: 'west', pos: { x: 0, y: targetRoom.position.y + Math.floor(targetRoom.height / 2) }, dir: ExitDirection.East },
-		];
-
-		for (const edge of edges) {
-			const distance = this.calculateDistance(edge.pos, {
-				x: targetRoom.position.x + Math.floor(targetRoom.width / 2),
-				y: targetRoom.position.y + Math.floor(targetRoom.height / 2)
-			});
-
-			candidates.push({
-				position: edge.pos,
-				direction: edge.dir,
-				distance
-			});
-		}
-
-		// Return the closest edge position
-		candidates.sort((a, b) => a.distance - b.distance);
-		return candidates.length > 0 ? candidates[0] : null;
-	}
-
 	private tryCreateEntranceForRoom(room: Room, entrancePositions: Array<{ position: Position; direction: ExitDirection }>): boolean {
 		// Try each entrance position until one works
 		for (const entrancePos of entrancePositions) {
@@ -310,6 +269,9 @@ export class GeomorphDungeonGenerator {
 
 		// Create entrance at closest edge
 		const bestEdge = edgeOptions[0];
+		if (!bestEdge) {
+			throw new Error('No valid edge options for entrance creation');
+		}
 		this.entranceDoor = {
 			position: bestEdge.pos,
 			direction: bestEdge.dir,
@@ -425,25 +387,6 @@ export class GeomorphDungeonGenerator {
 		return closestConnectionPoint;
 	}
 
-	private connectEntranceToRoom(entrance: ExteriorDoor, targetRoom: Room): void {
-		// This method is now deprecated in favor of the new connection system
-		// But keeping it for backward compatibility if called directly
-		const closestConnectionPoint = this.findClosestConnectionPoint(targetRoom, entrance.position);
-
-		if (!closestConnectionPoint) return;
-
-		const corridorSegments = this.corridorGenerator.generateCorridor(
-			entrance.position,
-			closestConnectionPoint.position
-		);
-
-		this.corridors.push(...corridorSegments);
-
-		if (!isConnectionPointConnected(closestConnectionPoint)) {
-			connectConnectionPoint(closestConnectionPoint, 'entrance-corridor');
-		}
-	}
-
 	private generateMainRooms(count: number): void {
 		let attempts = 0;
 		const maxAttempts = count * 10;
@@ -538,7 +481,11 @@ export class GeomorphDungeonGenerator {
 
 		// Connect all rooms to ensure reachability
 		const connectedRooms = new Set<string>();
-		connectedRooms.add(this.rooms[0].id); // Start with first room
+		const firstRoom = this.rooms[0];
+		if (!firstRoom) {
+			throw new Error('No rooms available for connection');
+		}
+		connectedRooms.add(firstRoom.id); // Start with first room
 
 		// Connect each unconnected room to the nearest connected room
 		while (connectedRooms.size < this.rooms.length) {
@@ -578,8 +525,8 @@ export class GeomorphDungeonGenerator {
 		for (let i = 0; i < additionalConnections; i++) {
 			const room1 = this.rooms[Math.floor(Math.random() * this.rooms.length)];
 			const room2 = this.rooms[Math.floor(Math.random() * this.rooms.length)];
-			
-			if (room1.id !== room2.id) {
+
+			if (room1 && room2 && room1.id !== room2.id) {
 				this.connectTwoRooms(room1, room2);
 			}
 		}
@@ -624,8 +571,12 @@ export class GeomorphDungeonGenerator {
 				this.corridors.push(...corridorSegments);
 
 				// Mark connection points as connected
-				connectConnectionPoint(bestConnection.point1, corridorSegments[0].id);
-				connectConnectionPoint(bestConnection.point2, corridorSegments[corridorSegments.length - 1].id);
+				const firstCorridor = corridorSegments[0];
+				const lastCorridor = corridorSegments[corridorSegments.length - 1];
+				if (firstCorridor && lastCorridor) {
+					connectConnectionPoint(bestConnection.point1, firstCorridor.id);
+					connectConnectionPoint(bestConnection.point2, lastCorridor.id);
+				}
 
 				// Link corridor endpoints to room connection points
 				this.linkCorridorToRooms(corridorSegments, bestConnection.point1, bestConnection.point2);
@@ -640,8 +591,12 @@ export class GeomorphDungeonGenerator {
 		const lastCorridor = corridorSegments[corridorSegments.length - 1];
 
 		// Find and mark corridor connection points that connect to room points
-		this.markCorridorConnectionPoint(firstCorridor, roomPoint1.position);
-		this.markCorridorConnectionPoint(lastCorridor, roomPoint2.position);
+		if (firstCorridor) {
+			this.markCorridorConnectionPoint(firstCorridor, roomPoint1.position);
+		}
+		if (lastCorridor) {
+			this.markCorridorConnectionPoint(lastCorridor, roomPoint2.position);
+		}
 
 		// Also mark intermediate corridor connections
 		for (let i = 0; i < corridorSegments.length - 1; i++) {
@@ -649,7 +604,9 @@ export class GeomorphDungeonGenerator {
 			const nextCorridor = corridorSegments[i + 1];
 
 			// Find connection points between adjacent corridors
-			this.markCorridorConnectionsBetween(currentCorridor, nextCorridor);
+			if (currentCorridor && nextCorridor) {
+				this.markCorridorConnectionsBetween(currentCorridor, nextCorridor);
+			}
 		}
 	}
 
@@ -696,6 +653,8 @@ export class GeomorphDungeonGenerator {
 
 			if (availablePoints.length > 0) {
 				const selected = availablePoints[Math.floor(Math.random() * availablePoints.length)];
+
+				if(!selected) throw Error("'selected' undefined");
 				
 				// Create a short dead-end corridor
 				const deadEndLength = 3 + Math.floor(Math.random() * 5);
@@ -714,12 +673,13 @@ export class GeomorphDungeonGenerator {
 					);
 
 					// Only proceed if corridor generation was successful
-					if (corridorSegments.length > 0) {
+					const [corridorSegment] = corridorSegments;
+					if (corridorSegment) {
 						this.corridors.push(...corridorSegments);
-						connectConnectionPoint(selected.point, corridorSegments[0].id);
+						connectConnectionPoint(selected.point, corridorSegment.id);
 
 						// Mark the first corridor's connection point that connects to the room
-						this.markCorridorConnectionPoint(corridorSegments[0], selected.point.position);
+						this.markCorridorConnectionPoint(corridorSegment, selected.point.position);
 					}
 				}
 			}
@@ -734,14 +694,18 @@ export class GeomorphDungeonGenerator {
 			{ x: -1, y: 0 }, // West
 		];
 		
-		return directions[Math.floor(Math.random() * directions.length)];
+		const direction = directions[Math.floor(Math.random() * directions.length)];
+
+		if(!direction) throw Error('Direction undefined')
+
+		return direction;
 	}
 
 	private isValidPosition(position: Position): boolean {
 		return position.x >= 0 && 
-					 position.x < this.settings.gridSize && 
-					 position.y >= 0 && 
-					 position.y < this.settings.gridSize;
+			position.x < this.settings.gridSize && 
+			position.y >= 0 && 
+			position.y < this.settings.gridSize;
 	}
 
 	private createDungeonMap(): DungeonMap {
