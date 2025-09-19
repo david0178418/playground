@@ -2,6 +2,7 @@ import { BrowserRouter, Link, Outlet, Route, Routes } from "react-router";
 import "./index.css";
 import App from "./App";
 import Foo from "./projects/foo/foo";
+import DungeonGenerator from "./projects/dungeon-generator";
 import { Fab } from "@mui/material";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
@@ -19,6 +20,10 @@ export default function RouteMap() {
 					<Route
 						path="foo"
 						element={<Foo />}
+					/>
+					<Route
+						path="dungeon-generator"
+						element={<DungeonGenerator />}
 					/>
 				</Route>
 			</Routes>

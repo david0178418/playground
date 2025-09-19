@@ -11,6 +11,11 @@ export default function App() {
 						Link to Foo
 					</ListItemText>
 				</ListItem>
+				<ListItem component={Link} to="/dungeon-generator">
+					<ListItemText>
+						Dungeon Generator
+					</ListItemText>
+				</ListItem>
 			</List>
 		</Container>
 	);
