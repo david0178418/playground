@@ -657,7 +657,7 @@ function createDungeonMap(state: DungeonState, settings: GenerationSettings): Du
 		createdAt: new Date(),
 		gridSize: settings.gridSize,
 		totalRooms: state.rooms.length,
-		seed: settings.seed!,
+		seed: settings.seed,
 	};
 }
 

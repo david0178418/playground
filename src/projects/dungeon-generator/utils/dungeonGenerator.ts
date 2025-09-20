@@ -11,4 +11,5 @@ export const DEFAULT_GENERATION_SETTINGS: GenerationSettings = {
 	gridSize: GENERATION_DEFAULTS.GRID_SIZE, // 30x30 grid for graph paper compatibility
 	maxExitsPerRoom: GENERATION_DEFAULTS.MAX_EXITS_PER_ROOM,
 	roomSpacing: GENERATION_DEFAULTS.ROOM_SPACING, // 1 grid square spacing
+	seed: ''
 };

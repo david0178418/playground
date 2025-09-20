@@ -11,6 +11,7 @@ import {
 import type { Room, DungeonMap } from '../types';
 import { ExitDirection } from '../types';
 import { isConnectionPointConnected } from '../utils/connectionHelpers';
+import { hasProps } from '@/common/utils';
 
 interface Props {
 	room: Room | null;
@@ -80,7 +81,7 @@ export function RoomDetails(props: Props) {
 				);
 				return { corridor: connectedElement };
 			})
-			.filter(item => item.corridor) : [];
+			.filter(item => hasProps(item, 'corridor')) : [];
 
 	return (
 		<Paper elevation={3} sx={{ p: 3, height: 400, overflow: 'auto' }}>
@@ -165,10 +166,10 @@ export function RoomDetails(props: Props) {
 						{connectedRooms.map(({ corridor }, index) => (
 							<ListItem key={index} sx={{ px: 0 }}>
 								<ListItemText
-									primary={`Corridor ${corridor!.id.split('-')[1]?.slice(0, 8) || 'Unknown'}`}
+									primary={`Corridor ${corridor.id.split('-')[1]?.slice(0, 8) || 'Unknown'}`}
 									secondary={
 										<Chip
-											label={formatRoomShape(corridor!.type)}
+											label={formatRoomShape(corridor.type)}
 											size="small"
 											color="info"
 											variant="outlined"

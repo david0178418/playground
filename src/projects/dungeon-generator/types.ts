@@ -123,5 +123,5 @@ export interface GenerationSettings {
 	gridSize: number;
 	maxExitsPerRoom: number;
 	roomSpacing: number;
-	seed?: string;
+	seed: string;
 }
