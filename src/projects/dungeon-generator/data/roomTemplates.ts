@@ -319,3 +319,16 @@ export function getRandomRoomTemplate(type: RoomType): RoomTemplate {
 	}
 	return template;
 }
+
+export function getRoomTemplateByIndex(index: number, type: RoomType): RoomTemplate {
+	const templates = getRoomTemplatesByType(type);
+	if (templates.length === 0) {
+		throw new Error(`No room templates found for type: ${type}`);
+	}
+	const templateIndex = index % templates.length;
+	const template = templates[templateIndex];
+	if (!template) {
+		throw new Error(`Template selection error for type: ${type}`);
+	}
+	return template;
+}

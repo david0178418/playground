@@ -16,30 +16,34 @@ import {
 } from '../types';
 import { generateCorridor } from './corridorGenerator';
 import {
-	getRandomRoomTemplate,
+	getRoomTemplateByIndex,
 } from '../data/roomTemplates';
 import { isConnectionPointConnected, connectConnectionPoint } from './connectionHelpers';
+import { SeededRandom, generateRandomSeed } from './seededRandom';
 
 interface DungeonState {
 	rooms: Room[];
 	corridors: Corridor[];
 	entranceDoor: ExteriorDoor | undefined;
 	occupiedPositions: Set<string>;
+	rng: SeededRandom;
+	idCounter: number;
 }
 
-function createInitialState(): DungeonState {
+function createInitialState(settings: GenerationSettings): DungeonState {
+	// Generate seed if not provided
+	const seed = settings.seed || generateRandomSeed();
+
 	return {
 		rooms: [],
 		corridors: [],
 		entranceDoor: undefined,
 		occupiedPositions: new Set(),
+		rng: new SeededRandom(seed),
+		idCounter: 1,
 	};
 }
 
-function determineRoomCount(settings: GenerationSettings): number {
-	const { minRooms, maxRooms } = settings;
-	return minRooms + Math.floor(Math.random() * (maxRooms - minRooms + 1));
-}
 
 function calculateDistance(pos1: Position, pos2: Position): number {
 	return Math.abs(pos1.x - pos2.x) + Math.abs(pos1.y - pos2.y);
@@ -158,7 +162,8 @@ function attemptEntranceConnection(state: DungeonState, settings: GenerationSett
 		entrancePosition,
 		closestConnectionPoint.position,
 		state.occupiedPositions,
-		settings.gridSize
+		settings.gridSize,
+		{ value: state.idCounter }
 	);
 
 	if (corridorSegments.length === 0) {
@@ -217,7 +222,7 @@ function forceEntranceConnection(state: DungeonState, entrance: ExteriorDoor, ro
 	const corridorSegments: Corridor[] = [];
 
 	if (start.x !== end.x) {
-		const horizontalId = `corridor-entrance-h-${Date.now()}`;
+		const horizontalId = `corridor-entrance-h-${state.idCounter++}`;
 		corridorSegments.push({
 			id: horizontalId,
 			type: CorridorType.Straight,
@@ -234,7 +239,7 @@ function forceEntranceConnection(state: DungeonState, entrance: ExteriorDoor, ro
 	}
 
 	if (start.y !== end.y) {
-		const verticalId = `corridor-entrance-v-${Date.now()}`;
+		const verticalId = `corridor-entrance-v-${state.idCounter++}`;
 		corridorSegments.push({
 			id: verticalId,
 			type: CorridorType.Straight,
@@ -354,16 +359,16 @@ function isValidRoomPosition(template: RoomTemplate, position: Position, setting
 	return true;
 }
 
-function findValidRoomPosition(template: RoomTemplate, settings: GenerationSettings, occupiedPositions: Set<string>): Position | null {
+function findValidRoomPosition(state: DungeonState, template: RoomTemplate, settings: GenerationSettings): Position | null {
 	const attempts = 50;
 
 	for (let i = 0; i < attempts; i++) {
 		const position: Position = {
-			x: Math.floor(Math.random() * (settings.gridSize - template.width - 2)) + 1,
-			y: Math.floor(Math.random() * (settings.gridSize - template.height - 2)) + 1,
+			x: state.rng.nextInt(1, settings.gridSize - template.width - 2),
+			y: state.rng.nextInt(1, settings.gridSize - template.height - 2),
 		};
 
-		if (isValidRoomPosition(template, position, settings, occupiedPositions)) {
+		if (isValidRoomPosition(template, position, settings, state.occupiedPositions)) {
 			return position;
 		}
 	}
@@ -371,7 +376,7 @@ function findValidRoomPosition(template: RoomTemplate, settings: GenerationSetti
 	return null;
 }
 
-function createRoomFromTemplate(template: RoomTemplate, position: Position): Room {
+function createRoomFromTemplate(state: DungeonState, template: RoomTemplate, position: Position): Room {
 	const connectionPoints: ConnectionPoint[] = template.connectionPoints.map(cp => ({
 		...cp,
 		position: {
@@ -381,7 +386,7 @@ function createRoomFromTemplate(template: RoomTemplate, position: Position): Roo
 	}));
 
 	return {
-		id: `room-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+		id: `room-${state.idCounter++}`,
 		shape: template.shape,
 		type: template.type,
 		size: template.size,
@@ -408,21 +413,21 @@ function generateMainRooms(state: DungeonState, settings: GenerationSettings, co
 	while (state.rooms.length < count && attempts < maxAttempts) {
 		attempts++;
 
-		const template = getRandomRoomTemplate(RoomType.Standard);
-		const position = findValidRoomPosition(template, settings, state.occupiedPositions);
+		const template = getRoomTemplateByIndex(state.idCounter % 4, RoomType.Standard);
+		const position = findValidRoomPosition(state, template, settings);
 
 		if (position) {
-			const room = createRoomFromTemplate(template, position);
+			const room = createRoomFromTemplate(state, template, position);
 			state.rooms.push(room);
 			markRoomAsOccupied(state, room);
 		}
 	}
 }
 
-function markCorridorConnectionPoint(corridor: Corridor, targetPosition: Position): void {
+function markCorridorConnectionPoint(corridor: Corridor, targetPosition: Position, connectedElementId: string): void {
 	for (const cp of corridor.connectionPoints) {
 		if (cp.position.x === targetPosition.x && cp.position.y === targetPosition.y) {
-			connectConnectionPoint(cp, corridor.id);
+			connectConnectionPoint(cp, connectedElementId);
 			break;
 		}
 	}
@@ -439,19 +444,24 @@ function markCorridorConnectionsBetween(corridor1: Corridor, corridor2: Corridor
 	}
 }
 
-function linkCorridorToRooms(corridorSegments: Corridor[], roomPoint1: ConnectionPoint, roomPoint2: ConnectionPoint): void {
+function linkCorridorToRooms(corridorSegments: Corridor[], roomPoint1: ConnectionPoint, roomPoint2: ConnectionPoint, room1Id: string, room2Id: string): void {
 	if (corridorSegments.length === 0) return;
 
 	const firstCorridor = corridorSegments[0];
 	const lastCorridor = corridorSegments[corridorSegments.length - 1];
 
+	// Connect corridor endpoints to rooms, not to themselves
 	if (firstCorridor) {
-		markCorridorConnectionPoint(firstCorridor, roomPoint1.position);
+		markCorridorConnectionPoint(firstCorridor, roomPoint1.position, room1Id);
 	}
-	if (lastCorridor) {
-		markCorridorConnectionPoint(lastCorridor, roomPoint2.position);
+	if (lastCorridor && corridorSegments.length > 1) {
+		markCorridorConnectionPoint(lastCorridor, roomPoint2.position, room2Id);
+	} else if (firstCorridor && corridorSegments.length === 1) {
+		// Single corridor connects to both rooms
+		markCorridorConnectionPoint(firstCorridor, roomPoint2.position, room2Id);
 	}
 
+	// Connect adjacent corridor segments to each other
 	for (let i = 0; i < corridorSegments.length - 1; i++) {
 		const currentCorridor = corridorSegments[i];
 		const nextCorridor = corridorSegments[i + 1];
@@ -488,12 +498,17 @@ function connectTwoRooms(state: DungeonState, settings: GenerationSettings, room
 	}
 
 	if (bestConnection) {
+		const idCounterRef = { value: state.idCounter };
 		const corridorSegments = generateCorridor(
 			bestConnection.point1.position,
 			bestConnection.point2.position,
 			state.occupiedPositions,
-			settings.gridSize
+			settings.gridSize,
+			idCounterRef
 		);
+
+		// Update state idCounter with the new value
+		state.idCounter = idCounterRef.value;
 
 		if (corridorSegments.length > 0) {
 			state.corridors.push(...corridorSegments);
@@ -505,7 +520,7 @@ function connectTwoRooms(state: DungeonState, settings: GenerationSettings, room
 				connectConnectionPoint(bestConnection.point2, lastCorridor.id);
 			}
 
-			linkCorridorToRooms(corridorSegments, bestConnection.point1, bestConnection.point2);
+			linkCorridorToRooms(corridorSegments, bestConnection.point1, bestConnection.point2, room1.id, room2.id);
 		}
 	}
 }
@@ -554,8 +569,8 @@ function connectRoomsWithCorridors(state: DungeonState, settings: GenerationSett
 
 	const additionalConnections = Math.floor(state.rooms.length / 3);
 	for (let i = 0; i < additionalConnections; i++) {
-		const room1 = state.rooms[Math.floor(Math.random() * state.rooms.length)];
-		const room2 = state.rooms[Math.floor(Math.random() * state.rooms.length)];
+		const room1 = state.rooms[state.rng.nextIntMax(state.rooms.length)];
+		const room2 = state.rooms[state.rng.nextIntMax(state.rooms.length)];
 
 		if (room1 && room2 && room1.id !== room2.id) {
 			connectTwoRooms(state, settings, room1, room2);
@@ -563,7 +578,7 @@ function connectRoomsWithCorridors(state: DungeonState, settings: GenerationSett
 	}
 }
 
-function getRandomDirection(): { x: number; y: number } {
+function getRandomDirection(state: DungeonState): { x: number; y: number } {
 	const directions = [
 		{ x: 0, y: -1 },
 		{ x: 1, y: 0 },
@@ -571,11 +586,7 @@ function getRandomDirection(): { x: number; y: number } {
 		{ x: -1, y: 0 },
 	];
 
-	const direction = directions[Math.floor(Math.random() * directions.length)];
-
-	if(!direction) throw Error('Direction undefined')
-
-	return direction;
+	return state.rng.choice(directions);
 }
 
 function isValidPosition(position: Position, settings: GenerationSettings): boolean {
@@ -600,12 +611,10 @@ function addExplorationCorridors(state: DungeonState, settings: GenerationSettin
 		}
 
 		if (availablePoints.length > 0) {
-			const selected = availablePoints[Math.floor(Math.random() * availablePoints.length)];
+			const selected = state.rng.choice(availablePoints);
 
-			if(!selected) throw Error("'selected' undefined");
-
-			const deadEndLength = 3 + Math.floor(Math.random() * 5);
-			const direction = getRandomDirection();
+			const deadEndLength = state.rng.nextInt(3, 7);
+			const direction = getRandomDirection(state);
 
 			const endPosition: Position = {
 				x: selected.point.position.x + (direction.x * deadEndLength),
@@ -613,19 +622,25 @@ function addExplorationCorridors(state: DungeonState, settings: GenerationSettin
 			};
 
 			if (isValidPosition(endPosition, settings)) {
+				const idCounterRef = { value: state.idCounter };
 				const corridorSegments = generateCorridor(
 					selected.point.position,
 					endPosition,
 					state.occupiedPositions,
-					settings.gridSize
+					settings.gridSize,
+					idCounterRef
 				);
+
+				// Update state idCounter with the new value
+				state.idCounter = idCounterRef.value;
 
 				const [corridorSegment] = corridorSegments;
 				if (corridorSegment) {
 					state.corridors.push(...corridorSegments);
 					connectConnectionPoint(selected.point, corridorSegment.id);
 
-					markCorridorConnectionPoint(corridorSegment, selected.point.position);
+					// Connect corridor back to the room, not to itself
+					markCorridorConnectionPoint(corridorSegment, selected.point.position, selected.room.id);
 				}
 			}
 		}
@@ -634,7 +649,7 @@ function addExplorationCorridors(state: DungeonState, settings: GenerationSettin
 
 function createDungeonMap(state: DungeonState, settings: GenerationSettings): DungeonMap {
 	return {
-		id: `geomorph-dungeon-${Date.now()}`,
+		id: `geomorph-dungeon-${state.idCounter++}`,
 		name: `Geomorph Dungeon ${new Date().toLocaleDateString()}`,
 		rooms: state.rooms,
 		corridors: state.corridors,
@@ -642,20 +657,26 @@ function createDungeonMap(state: DungeonState, settings: GenerationSettings): Du
 		createdAt: new Date(),
 		gridSize: settings.gridSize,
 		totalRooms: state.rooms.length,
+		seed: settings.seed!,
 	};
 }
 
 export function generateGeomorphDungeon(settings: GenerationSettings): DungeonMap {
-	const state = createInitialState();
+	// Seed should already be provided by UI, but fallback just in case
+	const finalSettings: GenerationSettings = {
+		...settings,
+		seed: settings.seed || generateRandomSeed(),
+	};
 
-	const targetRoomCount = determineRoomCount(settings);
-	generateMainRooms(state, settings, targetRoomCount);
+	const state = createInitialState(finalSettings);
 
-	connectRoomsWithCorridors(state, settings);
+	generateMainRooms(state, finalSettings, finalSettings.roomCount);
 
-	addExplorationCorridors(state, settings);
+	connectRoomsWithCorridors(state, finalSettings);
 
-	createExteriorEntrance(state, settings);
+	addExplorationCorridors(state, finalSettings);
 
-	return createDungeonMap(state, settings);
+	createExteriorEntrance(state, finalSettings);
+
+	return createDungeonMap(state, finalSettings);
 }

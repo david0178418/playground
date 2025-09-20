@@ -103,6 +103,7 @@ export interface DungeonMap {
 	createdAt: Date;
 	gridSize: number;
 	totalRooms: number;
+	seed: string;
 }
 
 export interface RoomTemplate {
@@ -118,9 +119,9 @@ export interface RoomTemplate {
 }
 
 export interface GenerationSettings {
-	maxRooms: number;
-	minRooms: number;
+	roomCount: number;
 	gridSize: number;
 	maxExitsPerRoom: number;
 	roomSpacing: number;
+	seed?: string;
 }

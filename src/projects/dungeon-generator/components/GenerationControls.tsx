@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import type { GenerationSettings } from '../types';
 import { GENERATION_LIMITS } from '../constants';
+import { generateRandomSeed } from '../utils/seededRandom';
 
 interface Props {
 	onGenerate: (settings: GenerationSettings) => void;
@@ -38,7 +39,13 @@ export function GenerationControls(props: Props) {
 	};
 
 	const handleGenerate = () => {
-		onGenerate(settings);
+		// Generate seed if not provided and update UI
+		const finalSettings = { ...settings };
+		if (!finalSettings.seed || finalSettings.seed.trim() === '') {
+			finalSettings.seed = generateRandomSeed();
+			setSettings(finalSettings);
+		}
+		onGenerate(finalSettings);
 	};
 
 	return (
@@ -53,21 +60,21 @@ export function GenerationControls(props: Props) {
 				gap: 2 
 			}}>
 				<TextField
-					label="Minimum Rooms"
+					label="Room Count"
 					type="number"
-					value={settings.minRooms}
-					onChange={(e) => handleSettingChange('minRooms', parseInt(e.target.value) || 1)}
+					value={settings.roomCount}
+					onChange={(e) => handleSettingChange('roomCount', parseInt(e.target.value) || 1)}
 					inputProps={{ min: GENERATION_LIMITS.MIN_ROOMS_LIMIT, max: GENERATION_LIMITS.MAX_ROOMS_LIMIT }}
 					fullWidth
 					size="small"
 				/>
-				
+
 				<TextField
-					label="Maximum Rooms"
-					type="number"
-					value={settings.maxRooms}
-					onChange={(e) => handleSettingChange('maxRooms', parseInt(e.target.value) || 1)}
-					inputProps={{ min: GENERATION_LIMITS.MIN_ROOMS_LIMIT, max: GENERATION_LIMITS.MAX_ROOMS_LIMIT }}
+					label="Seed"
+					type="text"
+					value={settings.seed || ''}
+					onChange={(e) => handleSettingChange('seed', e.target.value)}
+					placeholder="Leave blank for random"
 					fullWidth
 					size="small"
 				/>

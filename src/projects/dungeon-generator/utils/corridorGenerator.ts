@@ -171,7 +171,7 @@ function positionToExitDirection(from: Position, to: Position): ExitDirection {
 	}
 }
 
-function createCorridorFromPath(path: Position[]): Corridor | null {
+function createCorridorFromPath(path: Position[], idCounter: { value: number }): Corridor | null {
 	if (path.length < 2) return null;
 
 	const start = path[0];
@@ -183,7 +183,7 @@ function createCorridorFromPath(path: Position[]): Corridor | null {
 	const length = path.length;
 
 	const corridor: Corridor = {
-		id: `corridor-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+		id: `corridor-${idCounter.value++}`,
 		type: CorridorType.Straight,
 		direction,
 		position: start,
@@ -205,7 +205,7 @@ function createCorridorFromPath(path: Position[]): Corridor | null {
 	return corridor;
 }
 
-function pathToCorridors(path: Position[], occupiedPositions: Set<string>): Corridor[] {
+function pathToCorridors(path: Position[], occupiedPositions: Set<string>, idCounter: { value: number }): Corridor[] {
 	if (path.length < 2) return [];
 
 	const corridors: Corridor[] = [];
@@ -223,7 +223,7 @@ function pathToCorridors(path: Position[], occupiedPositions: Set<string>): Corr
 			(next && getDirection(previous, current) !== getDirection(current, next));
 		if (shouldCreateSegment) {
 			const segmentPath = path.slice(currentSegmentStart, i + 1);
-			const corridor = createCorridorFromPath(segmentPath);
+			const corridor = createCorridorFromPath(segmentPath, idCounter);
 			if (corridor) {
 				corridors.push(corridor);
 				for (const pos of segmentPath) {
@@ -237,11 +237,11 @@ function pathToCorridors(path: Position[], occupiedPositions: Set<string>): Corr
 	return corridors;
 }
 
-export function generateCorridor(start: Position, end: Position, occupiedPositions: Set<string>, gridSize: number): Corridor[] {
+export function generateCorridor(start: Position, end: Position, occupiedPositions: Set<string>, gridSize: number, idCounter: { value: number }): Corridor[] {
 	const path = findPath(start, end, occupiedPositions, gridSize);
 	if (path.length === 0) {
 		return [];
 	}
 
-	return pathToCorridors(path, occupiedPositions);
+	return pathToCorridors(path, occupiedPositions, idCounter);
 }

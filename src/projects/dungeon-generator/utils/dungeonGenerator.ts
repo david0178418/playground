@@ -7,8 +7,7 @@ export function generateDungeon(settings: GenerationSettings): DungeonMap {
 }
 
 export const DEFAULT_GENERATION_SETTINGS: GenerationSettings = {
-	maxRooms: GENERATION_DEFAULTS.MAX_ROOMS,
-	minRooms: GENERATION_DEFAULTS.MIN_ROOMS,
+	roomCount: Math.floor((GENERATION_DEFAULTS.MIN_ROOMS + GENERATION_DEFAULTS.MAX_ROOMS) / 2),
 	gridSize: GENERATION_DEFAULTS.GRID_SIZE, // 30x30 grid for graph paper compatibility
 	maxExitsPerRoom: GENERATION_DEFAULTS.MAX_EXITS_PER_ROOM,
 	roomSpacing: GENERATION_DEFAULTS.ROOM_SPACING, // 1 grid square spacing
