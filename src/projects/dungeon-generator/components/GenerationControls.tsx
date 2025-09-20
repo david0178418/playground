@@ -135,18 +135,6 @@ export const GenerationControls: React.FC<GenerationControlsProps> = ({
 					Export JSON
 				</Button>
 			</Box>
-			
-			<Box sx={{ mt: 2 }}>
-				<Typography variant="body2" color="text.secondary" gutterBottom>
-					📝 <strong>Graph Paper Instructions:</strong>
-				</Typography>
-				<Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem', lineHeight: 1.4 }}>
-					• Each room is positioned on exact grid coordinates<br/>
-					• Grid numbers help you place rooms accurately<br/>
-					• Use 1 square = 5 feet for standard D&D scale<br/>
-					• Light lines show individual squares, dark lines mark every 5 squares
-				</Typography>
-			</Box>
 		</Paper>
 	);
 };
