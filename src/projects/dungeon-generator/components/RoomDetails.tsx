@@ -13,12 +13,17 @@ import type { Room, DungeonMap } from '../types';
 import { ExitDirection } from '../types';
 import { isConnectionPointConnected } from '../utils/connectionHelpers';
 
-interface RoomDetailsProps {
+interface Props {
 	room: Room | null;
 	dungeonMap: DungeonMap | null;
 }
 
-export const RoomDetails: React.FC<RoomDetailsProps> = ({ room, dungeonMap }) => {
+export function RoomDetails(props: Props) {
+	const {
+		room,
+		dungeonMap
+	} = props;
+
 	if (!room) {
 		return (
 			<Paper elevation={3} sx={{ p: 3, height: 400 }}>

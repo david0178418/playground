@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
 	Box,
 	Button,
@@ -10,7 +10,7 @@ import {
 import type { GenerationSettings } from '../types';
 import { GENERATION_LIMITS } from '../constants';
 
-interface GenerationControlsProps {
+interface Props {
 	onGenerate: (settings: GenerationSettings) => void;
 	onReset: () => void;
 	onExport: () => void;
@@ -19,14 +19,15 @@ interface GenerationControlsProps {
 	initialSettings: GenerationSettings;
 }
 
-export const GenerationControls: React.FC<GenerationControlsProps> = ({
-	onGenerate,
-	onReset,
-	onExport,
-	isGenerating,
-	hasMap,
-	initialSettings,
-}) => {
+export function GenerationControls(props: Props) {
+	const {
+		onGenerate,
+		onReset,
+		onExport,
+		isGenerating,
+		hasMap,
+		initialSettings,
+	} = props;
 	const [settings, setSettings] = useState<GenerationSettings>(initialSettings);
 
 	const handleSettingChange = <K extends keyof GenerationSettings>(

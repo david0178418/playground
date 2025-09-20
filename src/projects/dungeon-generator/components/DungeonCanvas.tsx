@@ -9,17 +9,18 @@ import {
 } from '../utils/renderingHelpers';
 import { RENDERING, COLORS } from '../constants';
 
-interface DungeonCanvasProps {
+interface Props {
 	dungeonMap: DungeonMap | null;
 	selectedRoomId: string | null;
 	onRoomSelect: (roomId: string) => void;
 }
 
-export const DungeonCanvas: React.FC<DungeonCanvasProps> = ({
-	dungeonMap,
-	selectedRoomId,
-	onRoomSelect,
-}) => {
+export function DungeonCanvas(props: Props) {
+	const {
+		dungeonMap,
+		selectedRoomId,
+		onRoomSelect,
+	} = props;
 	const canvasSize = 800;
 	const gridSquareSize = dungeonMap ? canvasSize / dungeonMap.gridSize : 20;
 
