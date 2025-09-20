@@ -101,15 +101,6 @@ export function GenerationControls(props: Props) {
 					helperText="Grid squares between rooms"
 				/>
 				
-				<TextField
-					label="Max Exits per Room"
-					type="number"
-					value={settings.maxExitsPerRoom}
-					onChange={(e) => handleSettingChange('maxExitsPerRoom', parseInt(e.target.value) || 1)}
-					inputProps={{ min: GENERATION_LIMITS.MIN_ROOMS_LIMIT, max: GENERATION_LIMITS.MAX_EXITS_LIMIT }}
-					fullWidth
-					size="small"
-				/>
 				
 			</Box>
 			

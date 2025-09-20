@@ -121,7 +121,6 @@ export interface RoomTemplate {
 export interface GenerationSettings {
 	roomCount: number;
 	gridSize: number;
-	maxExitsPerRoom: number;
 	roomSpacing: number;
 	seed: string;
 }

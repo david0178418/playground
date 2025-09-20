@@ -7,7 +7,6 @@ export const GENERATION_DEFAULTS = {
 	MAX_ROOMS: 12,
 	MIN_ROOMS: 6,
 	GRID_SIZE: 30,
-	MAX_EXITS_PER_ROOM: 4,
 	ROOM_SPACING: 1,
 } as const;
 
@@ -19,7 +18,6 @@ export const GENERATION_LIMITS = {
 	MAX_GRID_SIZE: 50,
 	MIN_ROOM_SPACING: 1,
 	MAX_ROOM_SPACING: 5,
-	MAX_EXITS_LIMIT: 8,
 } as const;
 
 // Room generation
