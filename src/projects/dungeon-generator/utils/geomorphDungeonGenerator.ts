@@ -14,7 +14,7 @@ import {
 	CorridorType,
 	CorridorDirection,
 } from '../types';
-import { CorridorGenerator } from './corridorGenerator';
+import { generateCorridor } from './corridorGenerator';
 import {
 	getRandomRoomTemplate,
 } from '../data/roomTemplates';
@@ -25,16 +25,14 @@ interface DungeonState {
 	corridors: Corridor[];
 	entranceDoor: ExteriorDoor | undefined;
 	occupiedPositions: Set<string>;
-	corridorGenerator: CorridorGenerator;
 }
 
-function createInitialState(settings: GenerationSettings): DungeonState {
+function createInitialState(): DungeonState {
 	return {
 		rooms: [],
 		corridors: [],
 		entranceDoor: undefined,
 		occupiedPositions: new Set(),
-		corridorGenerator: new CorridorGenerator(settings.gridSize),
 	};
 }
 
@@ -151,15 +149,16 @@ function findClosestConnectionPoint(room: Room, position: Position): ConnectionP
 	return closestConnectionPoint;
 }
 
-function attemptEntranceConnection(state: DungeonState, room: Room, entrancePosition: Position, direction: ExitDirection): boolean {
+function attemptEntranceConnection(state: DungeonState, settings: GenerationSettings, room: Room, entrancePosition: Position, direction: ExitDirection): boolean {
 	const closestConnectionPoint = findClosestConnectionPoint(room, entrancePosition);
 
 	if (!closestConnectionPoint) return false;
 
-	const corridorSegments = state.corridorGenerator.generateCorridor(
+	const corridorSegments = generateCorridor(
 		entrancePosition,
 		closestConnectionPoint.position,
-		state.occupiedPositions
+		state.occupiedPositions,
+		settings.gridSize
 	);
 
 	if (corridorSegments.length === 0) {
@@ -181,9 +180,9 @@ function attemptEntranceConnection(state: DungeonState, room: Room, entrancePosi
 	return true;
 }
 
-function tryCreateEntranceForRoom(state: DungeonState, room: Room, entrancePositions: Array<{ position: Position; direction: ExitDirection }>): boolean {
+function tryCreateEntranceForRoom(state: DungeonState, settings: GenerationSettings, room: Room, entrancePositions: Array<{ position: Position; direction: ExitDirection }>): boolean {
 	for (const entrancePos of entrancePositions) {
-		if (attemptEntranceConnection(state, room, entrancePos.position, entrancePos.direction)) {
+		if (attemptEntranceConnection(state, settings, room, entrancePos.position, entrancePos.direction)) {
 			return true;
 		}
 	}
@@ -329,7 +328,7 @@ function createExteriorEntrance(state: DungeonState, settings: GenerationSetting
 	}
 
 	for (const roomInfo of connectableRooms) {
-		if (tryCreateEntranceForRoom(state, roomInfo.room, roomInfo.entrancePositions)) {
+		if (tryCreateEntranceForRoom(state, settings, roomInfo.room, roomInfo.entrancePositions)) {
 			return;
 		}
 	}
@@ -463,7 +462,7 @@ function linkCorridorToRooms(corridorSegments: Corridor[], roomPoint1: Connectio
 	}
 }
 
-function connectTwoRooms(state: DungeonState, room1: Room, room2: Room): void {
+function connectTwoRooms(state: DungeonState, settings: GenerationSettings, room1: Room, room2: Room): void {
 	let bestConnection: {
 		point1: ConnectionPoint;
 		point2: ConnectionPoint;
@@ -489,10 +488,11 @@ function connectTwoRooms(state: DungeonState, room1: Room, room2: Room): void {
 	}
 
 	if (bestConnection) {
-		const corridorSegments = state.corridorGenerator.generateCorridor(
+		const corridorSegments = generateCorridor(
 			bestConnection.point1.position,
 			bestConnection.point2.position,
-			state.occupiedPositions
+			state.occupiedPositions,
+			settings.gridSize
 		);
 
 		if (corridorSegments.length > 0) {
@@ -510,7 +510,7 @@ function connectTwoRooms(state: DungeonState, room1: Room, room2: Room): void {
 	}
 }
 
-function connectRoomsWithCorridors(state: DungeonState): void {
+function connectRoomsWithCorridors(state: DungeonState, settings: GenerationSettings): void {
 	if (state.rooms.length < 2) return;
 
 	const connectedRooms = new Set<string>();
@@ -545,7 +545,7 @@ function connectRoomsWithCorridors(state: DungeonState): void {
 		}
 
 		if (bestConnection) {
-			connectTwoRooms(state, bestConnection.from, bestConnection.to);
+			connectTwoRooms(state, settings, bestConnection.from, bestConnection.to);
 			connectedRooms.add(bestConnection.to.id);
 		} else {
 			break;
@@ -558,7 +558,7 @@ function connectRoomsWithCorridors(state: DungeonState): void {
 		const room2 = state.rooms[Math.floor(Math.random() * state.rooms.length)];
 
 		if (room1 && room2 && room1.id !== room2.id) {
-			connectTwoRooms(state, room1, room2);
+			connectTwoRooms(state, settings, room1, room2);
 		}
 	}
 }
@@ -613,10 +613,11 @@ function addExplorationCorridors(state: DungeonState, settings: GenerationSettin
 			};
 
 			if (isValidPosition(endPosition, settings)) {
-				const corridorSegments = state.corridorGenerator.generateCorridor(
+				const corridorSegments = generateCorridor(
 					selected.point.position,
 					endPosition,
-					state.occupiedPositions
+					state.occupiedPositions,
+					settings.gridSize
 				);
 
 				const [corridorSegment] = corridorSegments;
@@ -645,12 +646,12 @@ function createDungeonMap(state: DungeonState, settings: GenerationSettings): Du
 }
 
 export function generateGeomorphDungeon(settings: GenerationSettings): DungeonMap {
-	const state = createInitialState(settings);
+	const state = createInitialState();
 
 	const targetRoomCount = determineRoomCount(settings);
 	generateMainRooms(state, settings, targetRoomCount);
 
-	connectRoomsWithCorridors(state);
+	connectRoomsWithCorridors(state, settings);
 
 	addExplorationCorridors(state, settings);
 
