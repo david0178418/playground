@@ -45,6 +45,7 @@ export const COLORS = {
 	ROOM_SELECTED: '#ff6b6b',
 	CORRIDOR_FILL: '#f0f0f0',
 	CORRIDOR_STROKE: '#666666',
+	CORRIDOR_INTERNAL_STROKE: '#cccccc', // Light borders between adjacent corridors
 	DOOR_FILL: '#8B4513',
 	ENTRANCE_FILL: '#228B22',
 	GRID_LIGHT: '#e0e0e0',

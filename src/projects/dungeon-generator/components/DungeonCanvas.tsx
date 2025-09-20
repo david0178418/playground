@@ -201,7 +201,7 @@ export function DungeonCanvas(props: Props) {
 		);
 	};
 
-	const renderCorridor = (corridor: Corridor) => {
+	const renderCorridor = (corridor: Corridor, allCorridorPositions: Set<string>) => {
 		const elements: React.ReactElement[] = [];
 
 		// Create a set for fast lookup of corridor positions
@@ -228,10 +228,10 @@ export function DungeonCanvas(props: Props) {
 			const squareX = pos.x * gridSquareSize;
 			const squareY = pos.y * gridSquareSize;
 
-			// Check each edge and draw thick line if it's an outer wall
+			// Check each edge and only draw walls at true exterior boundaries
 
-			// Top edge - if no corridor square above
-			if (!corridorPositions.has(`${pos.x},${pos.y - 1}`)) {
+			// Top edge - only draw if no corridor (from any corridor) above
+			if (!allCorridorPositions.has(`${pos.x},${pos.y - 1}`)) {
 				elements.push(
 					<line
 						key={`${corridor.id}-top-${index}`}
@@ -245,8 +245,8 @@ export function DungeonCanvas(props: Props) {
 				);
 			}
 
-			// Bottom edge - if no corridor square below
-			if (!corridorPositions.has(`${pos.x},${pos.y + 1}`)) {
+			// Bottom edge - only draw if no corridor (from any corridor) below
+			if (!allCorridorPositions.has(`${pos.x},${pos.y + 1}`)) {
 				elements.push(
 					<line
 						key={`${corridor.id}-bottom-${index}`}
@@ -260,8 +260,8 @@ export function DungeonCanvas(props: Props) {
 				);
 			}
 
-			// Left edge - if no corridor square to the left
-			if (!corridorPositions.has(`${pos.x - 1},${pos.y}`)) {
+			// Left edge - only draw if no corridor (from any corridor) to the left
+			if (!allCorridorPositions.has(`${pos.x - 1},${pos.y}`)) {
 				elements.push(
 					<line
 						key={`${corridor.id}-left-${index}`}
@@ -275,8 +275,8 @@ export function DungeonCanvas(props: Props) {
 				);
 			}
 
-			// Right edge - if no corridor square to the right
-			if (!corridorPositions.has(`${pos.x + 1},${pos.y}`)) {
+			// Right edge - only draw if no corridor (from any corridor) to the right
+			if (!allCorridorPositions.has(`${pos.x + 1},${pos.y}`)) {
 				elements.push(
 					<line
 						key={`${corridor.id}-right-${index}`}
@@ -435,7 +435,16 @@ export function DungeonCanvas(props: Props) {
 						))}
 						
 						{/* Corridors (render first so rooms appear on top) */}
-						{dungeonMap.corridors?.map(renderCorridor)}
+						{(() => {
+							// Create global corridor position map for all corridors
+							const allCorridorPositions = new Set<string>();
+							dungeonMap.corridors?.forEach(corridor => {
+								corridor.path.forEach(pos => {
+									allCorridorPositions.add(`${pos.x},${pos.y}`);
+								});
+							});
+							return dungeonMap.corridors?.map(corridor => renderCorridor(corridor, allCorridorPositions));
+						})()}
 
 						{/* Rooms */}
 						{dungeonMap.rooms.map(renderRoom)}
