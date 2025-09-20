@@ -158,7 +158,8 @@ function attemptEntranceConnection(state: DungeonState, room: Room, entrancePosi
 
 	const corridorSegments = state.corridorGenerator.generateCorridor(
 		entrancePosition,
-		closestConnectionPoint.position
+		closestConnectionPoint.position,
+		state.occupiedPositions
 	);
 
 	if (corridorSegments.length === 0) {
@@ -399,8 +400,6 @@ function markRoomAsOccupied(state: DungeonState, room: Room): void {
 			state.occupiedPositions.add(`${x},${y}`);
 		}
 	}
-
-	state.corridorGenerator.markRoomAsOccupied(room);
 }
 
 function generateMainRooms(state: DungeonState, settings: GenerationSettings, count: number): void {
@@ -492,7 +491,8 @@ function connectTwoRooms(state: DungeonState, room1: Room, room2: Room): void {
 	if (bestConnection) {
 		const corridorSegments = state.corridorGenerator.generateCorridor(
 			bestConnection.point1.position,
-			bestConnection.point2.position
+			bestConnection.point2.position,
+			state.occupiedPositions
 		);
 
 		if (corridorSegments.length > 0) {
@@ -615,7 +615,8 @@ function addExplorationCorridors(state: DungeonState, settings: GenerationSettin
 			if (isValidPosition(endPosition, settings)) {
 				const corridorSegments = state.corridorGenerator.generateCorridor(
 					selected.point.position,
-					endPosition
+					endPosition,
+					state.occupiedPositions
 				);
 
 				const [corridorSegment] = corridorSegments;

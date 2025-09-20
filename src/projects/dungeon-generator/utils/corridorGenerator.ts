@@ -1,7 +1,6 @@
 import type {
 	Corridor,
 	Position,
-	Room,
 } from '../types';
 import {
 	CorridorType,
@@ -19,42 +18,21 @@ export interface PathfindingNode {
 
 export class CorridorGenerator {
 	private gridSize: number;
-	private occupiedSpaces: Set<string> = new Set();
 
 	constructor(gridSize: number) {
 		this.gridSize = gridSize;
 	}
 
-	public markRoomAsOccupied(room: Room): void {
-		const template = room.templateId;
-		if (!template) {
-			// Fallback for simple rooms
-			for (let x = room.position.x; x < room.position.x + room.width; x++) {
-				for (let y = room.position.y; y < room.position.y + room.height; y++) {
-					this.occupiedSpaces.add(`${x},${y}`);
-				}
-			}
-			return;
-		}
-
-		// Use room template grid pattern for more accurate marking
-		for (let y = 0; y < room.height; y++) {
-			for (let x = 0; x < room.width; x++) {
-				this.occupiedSpaces.add(`${room.position.x + x},${room.position.y + y}`);
-			}
-		}
-	}
-
-	public generateCorridor(start: Position, end: Position): Corridor[] {
-		const path = this.findPath(start, end);
+	public generateCorridor(start: Position, end: Position, occupiedPositions: Set<string>): Corridor[] {
+		const path = this.findPath(start, end, occupiedPositions);
 		if (path.length === 0) {
 			return [];
 		}
 
-		return this.pathToCorridors(path);
+		return this.pathToCorridors(path, occupiedPositions);
 	}
 
-	private findPath(start: Position, end: Position): Position[] {
+	private findPath(start: Position, end: Position, occupiedPositions: Set<string>): Position[] {
 		const openSet: PathfindingNode[] = [];
 		const closedSet: Set<string> = new Set();
 		
@@ -103,7 +81,7 @@ export class CorridorGenerator {
 			for (const neighbor of neighbors) {
 				const neighborKey = `${neighbor.x},${neighbor.y}`;
 				
-				if (closedSet.has(neighborKey) || this.isBlocked(neighbor, start, end)) {
+				if (closedSet.has(neighborKey) || this.isBlocked(neighbor, start, end, occupiedPositions)) {
 					continue;
 				}
 
@@ -164,7 +142,7 @@ export class CorridorGenerator {
 					 position.y < this.gridSize;
 	}
 
-	private isBlocked(position: Position, start: Position, end: Position): boolean {
+	private isBlocked(position: Position, start: Position, end: Position, occupiedPositions: Set<string>): boolean {
 		const positionKey = `${position.x},${position.y}`;
 		
 		// Allow movement through start and end positions
@@ -173,7 +151,7 @@ export class CorridorGenerator {
 			return false;
 		}
 
-		return this.occupiedSpaces.has(positionKey);
+		return occupiedPositions.has(positionKey);
 	}
 
 	private calculateHeuristic(from: Position, to: Position): number {
@@ -193,7 +171,7 @@ export class CorridorGenerator {
 		return path;
 	}
 
-	private pathToCorridors(path: Position[]): Corridor[] {
+	private pathToCorridors(path: Position[], occupiedPositions: Set<string>): Corridor[] {
 		if (path.length < 2) return [];
 
 		const corridors: Corridor[] = [];
@@ -218,7 +196,7 @@ export class CorridorGenerator {
 					corridors.push(corridor);
 					// Mark corridor spaces as occupied
 					for (const pos of segmentPath) {
-						this.occupiedSpaces.add(`${pos.x},${pos.y}`);
+						occupiedPositions.add(`${pos.x},${pos.y}`);
 					}
 				}
 				currentSegmentStart = i;
