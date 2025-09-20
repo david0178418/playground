@@ -35,6 +35,8 @@ export const RENDERING = {
 	STROKE_WIDTH: 1,
 	ROOM_STROKE_WIDTH: 2, // Twice as thick for room outlines
 	SELECTED_STROKE_WIDTH: 3,
+	INNER_GRID_STROKE_WIDTH: 0.5, // Light grid lines inside rooms/corridors
+	CANVAS_SIZE: 800, // Default canvas size
 } as const;
 
 // Colors
@@ -43,9 +45,9 @@ export const COLORS = {
 	ROOM_STROKE: '#000000',
 	ROOM_INNER_GRID: '#cccccc', // 50% lighter grid lines inside rooms
 	ROOM_SELECTED: '#ff6b6b',
+	ROOM_SELECTED_FILL: '#e3f2fd', // Light blue fill for selected rooms
 	CORRIDOR_FILL: '#f0f0f0',
 	CORRIDOR_STROKE: '#666666',
-	CORRIDOR_INTERNAL_STROKE: '#cccccc', // Light borders between adjacent corridors
 	DOOR_FILL: '#8B4513',
 	ENTRANCE_FILL: '#228B22',
 	GRID_LIGHT: '#e0e0e0',

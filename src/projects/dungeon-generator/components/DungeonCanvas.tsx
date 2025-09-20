@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Box, Paper } from '@mui/material';
 import type { DungeonMap, Room, Corridor, ConnectionPoint, ExteriorDoor } from '../types';
 import { getRoomTemplateById } from '../data/roomTemplates';
@@ -21,8 +21,20 @@ export function DungeonCanvas(props: Props) {
 		selectedRoomId,
 		onRoomSelect,
 	} = props;
-	const canvasSize = 800;
-	const gridSquareSize = dungeonMap ? canvasSize / dungeonMap.gridSize : 20;
+	const canvasSize = RENDERING.CANVAS_SIZE;
+	const gridSquareSize = dungeonMap ? canvasSize / dungeonMap.gridSize : RENDERING.GRID_SQUARE_SIZE;
+
+	// Memoized corridor position calculation for better performance
+	const allCorridorPositions = useMemo(() => {
+		if (!dungeonMap?.corridors) return new Set<string>();
+		const positions = new Set<string>();
+		dungeonMap.corridors.forEach(corridor => {
+			corridor.path.forEach(pos => {
+				positions.add(`${pos.x},${pos.y}`);
+			});
+		});
+		return positions;
+	}, [dungeonMap?.corridors]);
 
 	const renderRoom = (room: Room) => {
 		const x = room.position.x * gridSquareSize;
@@ -56,7 +68,7 @@ export function DungeonCanvas(props: Props) {
 								height={gridSquareSize}
 								fill={colors.fill}
 								stroke={COLORS.ROOM_INNER_GRID}
-								strokeWidth={0.5}
+								strokeWidth={RENDERING.INNER_GRID_STROKE_WIDTH}
 								style={{ cursor: 'pointer' }}
 								onClick={() => onRoomSelect(room.id)}
 							/>
@@ -65,76 +77,22 @@ export function DungeonCanvas(props: Props) {
 				}
 			}
 
-			// Draw thick black outer wall edges
+			// Draw thick black outer wall edges using helper function
 			for (let row = 0; row < template.gridPattern.length; row++) {
 				const gridRow = template.gridPattern[row];
 				if (!gridRow) continue;
 				for (let col = 0; col < gridRow.length; col++) {
 					if (gridRow[col]) {
-						const squareX = x + col * gridSquareSize;
-						const squareY = y + row * gridSquareSize;
-
-						// Check each edge and draw thick line if it's an outer wall
-
-						// Top edge - if no room square above
-						if (row === 0 || !template.gridPattern[row - 1]?.[col]) {
-							roomElements.push(
-								<line
-									key={`${room.id}-top-${row}-${col}`}
-									x1={squareX}
-									y1={squareY}
-									x2={squareX + gridSquareSize}
-									y2={squareY}
-									stroke={colors.stroke}
-									strokeWidth={colors.strokeWidth}
-								/>
-							);
-						}
-
-						// Bottom edge - if no room square below
-						if (row === template.gridPattern.length - 1 || !template.gridPattern[row + 1]?.[col]) {
-							roomElements.push(
-								<line
-									key={`${room.id}-bottom-${row}-${col}`}
-									x1={squareX}
-									y1={squareY + gridSquareSize}
-									x2={squareX + gridSquareSize}
-									y2={squareY + gridSquareSize}
-									stroke={colors.stroke}
-									strokeWidth={colors.strokeWidth}
-								/>
-							);
-						}
-
-						// Left edge - if no room square to the left
-						if (col === 0 || !gridRow[col - 1]) {
-							roomElements.push(
-								<line
-									key={`${room.id}-left-${row}-${col}`}
-									x1={squareX}
-									y1={squareY}
-									x2={squareX}
-									y2={squareY + gridSquareSize}
-									stroke={colors.stroke}
-									strokeWidth={colors.strokeWidth}
-								/>
-							);
-						}
-
-						// Right edge - if no room square to the right
-						if (col === gridRow.length - 1 || !gridRow[col + 1]) {
-							roomElements.push(
-								<line
-									key={`${room.id}-right-${row}-${col}`}
-									x1={squareX + gridSquareSize}
-									y1={squareY}
-									x2={squareX + gridSquareSize}
-									y2={squareY + gridSquareSize}
-									stroke={colors.stroke}
-									strokeWidth={colors.strokeWidth}
-								/>
-							);
-						}
+						const wallElements = renderRoomWalls(
+							room.id,
+							x + col * gridSquareSize,
+							y + row * gridSquareSize,
+							row,
+							col,
+							template.gridPattern,
+							colors
+						);
+						roomElements.push(...wallElements);
 					}
 				}
 			}
@@ -196,16 +154,107 @@ export function DungeonCanvas(props: Props) {
 				height={doorDims.height}
 				fill={COLORS.ROOM_FILL}
 				stroke={COLORS.ROOM_STROKE}
-				strokeWidth={RENDERING.STROKE_WIDTH + 0.5}
+				strokeWidth={RENDERING.STROKE_WIDTH + RENDERING.INNER_GRID_STROKE_WIDTH}
 			/>
 		);
 	};
 
-	const renderCorridor = (corridor: Corridor, allCorridorPositions: Set<string>) => {
+	// Helper function to render room wall edges
+	const renderRoomWalls = (
+		roomId: string,
+		squareX: number,
+		squareY: number,
+		row: number,
+		col: number,
+		gridPattern: boolean[][],
+		colors: { stroke: string; strokeWidth: number }
+	): React.ReactElement[] => {
 		const elements: React.ReactElement[] = [];
 
-		// Create a set for fast lookup of corridor positions
-		const corridorPositions = new Set(corridor.path.map(pos => `${pos.x},${pos.y}`));
+		// Define wall edge configurations with their conditions
+		const wallEdges = [
+			{
+				condition: row === 0 || !gridPattern[row - 1]?.[col],
+				coords: [squareX, squareY, squareX + gridSquareSize, squareY],
+				edgeName: 'top'
+			},
+			{
+				condition: row === gridPattern.length - 1 || !gridPattern[row + 1]?.[col],
+				coords: [squareX, squareY + gridSquareSize, squareX + gridSquareSize, squareY + gridSquareSize],
+				edgeName: 'bottom'
+			},
+			{
+				condition: col === 0 || !gridPattern[row][col - 1],
+				coords: [squareX, squareY, squareX, squareY + gridSquareSize],
+				edgeName: 'left'
+			},
+			{
+				condition: col === gridPattern[row].length - 1 || !gridPattern[row][col + 1],
+				coords: [squareX + gridSquareSize, squareY, squareX + gridSquareSize, squareY + gridSquareSize],
+				edgeName: 'right'
+			}
+		];
+
+		wallEdges.forEach(({ condition, coords, edgeName }) => {
+			if (condition) {
+				elements.push(
+					<line
+						key={`${roomId}-${edgeName}-${row}-${col}`}
+						x1={coords[0]}
+						y1={coords[1]}
+						x2={coords[2]}
+						y2={coords[3]}
+						stroke={colors.stroke}
+						strokeWidth={colors.strokeWidth}
+					/>
+				);
+			}
+		});
+
+		return elements;
+	};
+
+	// Helper function to render corridor border edges
+	const renderCorridorBorder = (
+		corridorId: string,
+		pos: { x: number; y: number },
+		index: number,
+		allCorridorPositions: Set<string>
+	): React.ReactElement[] => {
+		const squareX = pos.x * gridSquareSize;
+		const squareY = pos.y * gridSquareSize;
+		const elements: React.ReactElement[] = [];
+
+		// Define edge configurations: [offsetX, offsetY, x1, y1, x2, y2, edgeName]
+		const edges = [
+			[0, -1, squareX, squareY, squareX + gridSquareSize, squareY, 'top'],
+			[0, 1, squareX, squareY + gridSquareSize, squareX + gridSquareSize, squareY + gridSquareSize, 'bottom'],
+			[-1, 0, squareX, squareY, squareX, squareY + gridSquareSize, 'left'],
+			[1, 0, squareX + gridSquareSize, squareY, squareX + gridSquareSize, squareY + gridSquareSize, 'right']
+		] as const;
+
+		edges.forEach(([offsetX, offsetY, x1, y1, x2, y2, edgeName]) => {
+			// Only draw wall if no corridor exists at adjacent position
+			if (!allCorridorPositions.has(`${pos.x + offsetX},${pos.y + offsetY}`)) {
+				elements.push(
+					<line
+						key={`${corridorId}-${edgeName}-${index}`}
+						x1={x1}
+						y1={y1}
+						x2={x2}
+						y2={y2}
+						stroke={COLORS.CORRIDOR_STROKE}
+						strokeWidth={RENDERING.STROKE_WIDTH}
+					/>
+				);
+			}
+		});
+
+		return elements;
+	};
+
+	const renderCorridor = (corridor: Corridor, allCorridorPositions: Set<string>) => {
+		const elements: React.ReactElement[] = [];
 
 		// Render corridor squares with light inner grid lines
 		corridor.path.forEach((pos, index) => {
@@ -218,77 +267,15 @@ export function DungeonCanvas(props: Props) {
 					height={gridSquareSize}
 					fill={COLORS.CORRIDOR_FILL}
 					stroke={COLORS.ROOM_INNER_GRID}
-					strokeWidth={0.5}
+					strokeWidth={RENDERING.INNER_GRID_STROKE_WIDTH}
 				/>
 			);
 		});
 
-		// Draw thick outer wall edges for corridor
+		// Draw border walls using the helper function
 		corridor.path.forEach((pos, index) => {
-			const squareX = pos.x * gridSquareSize;
-			const squareY = pos.y * gridSquareSize;
-
-			// Check each edge and only draw walls at true exterior boundaries
-
-			// Top edge - only draw if no corridor (from any corridor) above
-			if (!allCorridorPositions.has(`${pos.x},${pos.y - 1}`)) {
-				elements.push(
-					<line
-						key={`${corridor.id}-top-${index}`}
-						x1={squareX}
-						y1={squareY}
-						x2={squareX + gridSquareSize}
-						y2={squareY}
-						stroke={COLORS.CORRIDOR_STROKE}
-						strokeWidth={RENDERING.STROKE_WIDTH}
-					/>
-				);
-			}
-
-			// Bottom edge - only draw if no corridor (from any corridor) below
-			if (!allCorridorPositions.has(`${pos.x},${pos.y + 1}`)) {
-				elements.push(
-					<line
-						key={`${corridor.id}-bottom-${index}`}
-						x1={squareX}
-						y1={squareY + gridSquareSize}
-						x2={squareX + gridSquareSize}
-						y2={squareY + gridSquareSize}
-						stroke={COLORS.CORRIDOR_STROKE}
-						strokeWidth={RENDERING.STROKE_WIDTH}
-					/>
-				);
-			}
-
-			// Left edge - only draw if no corridor (from any corridor) to the left
-			if (!allCorridorPositions.has(`${pos.x - 1},${pos.y}`)) {
-				elements.push(
-					<line
-						key={`${corridor.id}-left-${index}`}
-						x1={squareX}
-						y1={squareY}
-						x2={squareX}
-						y2={squareY + gridSquareSize}
-						stroke={COLORS.CORRIDOR_STROKE}
-						strokeWidth={RENDERING.STROKE_WIDTH}
-					/>
-				);
-			}
-
-			// Right edge - only draw if no corridor (from any corridor) to the right
-			if (!allCorridorPositions.has(`${pos.x + 1},${pos.y}`)) {
-				elements.push(
-					<line
-						key={`${corridor.id}-right-${index}`}
-						x1={squareX + gridSquareSize}
-						y1={squareY}
-						x2={squareX + gridSquareSize}
-						y2={squareY + gridSquareSize}
-						stroke={COLORS.CORRIDOR_STROKE}
-						strokeWidth={RENDERING.STROKE_WIDTH}
-					/>
-				);
-			}
+			const borderElements = renderCorridorBorder(corridor.id, pos, index, allCorridorPositions);
+			elements.push(...borderElements);
 		});
 
 		return <g key={corridor.id}>{elements}</g>;
@@ -395,7 +382,7 @@ export function DungeonCanvas(props: Props) {
 									d={`M ${gridSquareSize} 0 L 0 0 0 ${gridSquareSize}`}
 									fill="none"
 									stroke="#dddddd"
-									strokeWidth="0.5"
+									strokeWidth={RENDERING.INNER_GRID_STROKE_WIDTH}
 								/>
 							</pattern>
 						</defs>
@@ -435,16 +422,7 @@ export function DungeonCanvas(props: Props) {
 						))}
 						
 						{/* Corridors (render first so rooms appear on top) */}
-						{(() => {
-							// Create global corridor position map for all corridors
-							const allCorridorPositions = new Set<string>();
-							dungeonMap.corridors?.forEach(corridor => {
-								corridor.path.forEach(pos => {
-									allCorridorPositions.add(`${pos.x},${pos.y}`);
-								});
-							});
-							return dungeonMap.corridors?.map(corridor => renderCorridor(corridor, allCorridorPositions));
-						})()}
+						{dungeonMap.corridors?.map(corridor => renderCorridor(corridor, allCorridorPositions))}
 
 						{/* Rooms */}
 						{dungeonMap.rooms.map(renderRoom)}
