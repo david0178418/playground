@@ -20,6 +20,7 @@ import {
 } from '../data/roomTemplates';
 import { isConnectionPointConnected, connectConnectionPoint } from './connectionHelpers';
 import { SeededRandom, generateRandomSeed } from './seededRandom';
+import { mergeAdjacentCorridors } from './corridorMerger';
 
 interface DungeonState {
 	rooms: Room[];
@@ -648,11 +649,14 @@ function addExplorationCorridors(state: DungeonState, settings: GenerationSettin
 }
 
 function createDungeonMap(state: DungeonState, settings: GenerationSettings): DungeonMap {
+	const mergedCorridors = mergeAdjacentCorridors(state.corridors);
+
 	return {
 		id: `geomorph-dungeon-${state.idCounter++}`,
 		name: `Geomorph Dungeon ${new Date().toLocaleDateString()}`,
 		rooms: state.rooms,
 		corridors: state.corridors,
+		mergedCorridors: mergedCorridors,
 		entranceDoor: state.entranceDoor,
 		createdAt: new Date(),
 		gridSize: settings.gridSize,

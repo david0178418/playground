@@ -67,14 +67,14 @@ export function RoomDetails(props: Props) {
 		return size.charAt(0).toUpperCase() + size.slice(1);
 	};
 
-	// Find connected rooms through corridors
-	const connectedRooms = dungeonMap ? 
+	// Find connected rooms through merged corridors
+	const connectedRooms = dungeonMap ?
 		room.connectionPoints
 			.filter(cp => isConnectionPointConnected(cp))
 			.map(cp => {
-				// Find the corridor or room connected to this point
-				const connectedElement = dungeonMap.corridors.find(corridor => 
-					corridor.connectionPoints.some(corridorCp => 
+				// Find the merged corridor connected to this point
+				const connectedElement = dungeonMap.mergedCorridors.find(mergedCorridor =>
+					mergedCorridor.connectionPoints.some(corridorCp =>
 						Math.abs(corridorCp.position.x - cp.position.x) < 1 &&
 						Math.abs(corridorCp.position.y - cp.position.y) < 1
 					)

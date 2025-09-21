@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Box, Paper } from '@mui/material';
-import type { DungeonMap, Room, Corridor, ConnectionPoint, ExteriorDoor } from '../types';
+import type { DungeonMap, Room, Corridor, MergedCorridor, ConnectionPoint, ExteriorDoor } from '../types';
 import { getRoomTemplateById } from '../data/roomTemplates';
 import { isConnectionPointConnected } from '../utils/connectionHelpers';
 import {
@@ -26,15 +26,15 @@ export function DungeonCanvas(props: Props) {
 
 	// Memoized corridor position calculation for better performance
 	const allCorridorPositions = useMemo(() => {
-		if (!dungeonMap?.corridors) return new Set<string>();
+		if (!dungeonMap?.mergedCorridors) return new Set<string>();
 		const positions = new Set<string>();
-		dungeonMap.corridors.forEach(corridor => {
-			corridor.path.forEach(pos => {
+		dungeonMap.mergedCorridors.forEach(mergedCorridor => {
+			mergedCorridor.path.forEach(pos => {
 				positions.add(`${pos.x},${pos.y}`);
 			});
 		});
 		return positions;
-	}, [dungeonMap?.corridors]);
+	}, [dungeonMap?.mergedCorridors]);
 
 	const renderRoom = (room: Room) => {
 		const x = room.position.x * gridSquareSize;
@@ -253,14 +253,14 @@ export function DungeonCanvas(props: Props) {
 		return elements;
 	};
 
-	const renderCorridor = (corridor: Corridor, allCorridorPositions: Set<string>) => {
+	const renderCorridorPath = (id: string, path: Position[], allCorridorPositions: Set<string>) => {
 		const elements: React.ReactElement[] = [];
 
 		// Render corridor squares with light inner grid lines
-		corridor.path.forEach((pos, index) => {
+		path.forEach((pos, index) => {
 			elements.push(
 				<rect
-					key={`${corridor.id}-${index}`}
+					key={`${id}-${index}`}
 					x={pos.x * gridSquareSize}
 					y={pos.y * gridSquareSize}
 					width={gridSquareSize}
@@ -273,13 +273,16 @@ export function DungeonCanvas(props: Props) {
 		});
 
 		// Draw border walls using the helper function
-		corridor.path.forEach((pos, index) => {
-			const borderElements = renderCorridorBorder(corridor.id, pos, index, allCorridorPositions);
+		path.forEach((pos, index) => {
+			const borderElements = renderCorridorBorder(id, pos, index, allCorridorPositions);
 			elements.push(...borderElements);
 		});
 
-		return <g key={corridor.id}>{elements}</g>;
+		return <g key={id}>{elements}</g>;
 	};
+
+	const renderMergedCorridor = (mergedCorridor: MergedCorridor, allCorridorPositions: Set<string>) =>
+		renderCorridorPath(mergedCorridor.id, mergedCorridor.path, allCorridorPositions);
 
 	const renderExteriorEntrance = (entranceDoor: ExteriorDoor) => {
 		const x = entranceDoor.position.x * gridSquareSize;
@@ -422,7 +425,7 @@ export function DungeonCanvas(props: Props) {
 						))}
 						
 						{/* Corridors (render first so rooms appear on top) */}
-						{dungeonMap.corridors?.map(corridor => renderCorridor(corridor, allCorridorPositions))}
+						{dungeonMap.mergedCorridors?.map(mergedCorridor => renderMergedCorridor(mergedCorridor, allCorridorPositions))}
 
 						{/* Rooms */}
 						{dungeonMap.rooms.map(renderRoom)}

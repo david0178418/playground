@@ -94,11 +94,28 @@ export interface ExteriorDoor {
 	connectedElementId?: string; // ID of the room or corridor it connects to
 }
 
+export interface MergedCorridor {
+	id: string;
+	segments: Corridor[];
+	path: Position[];
+	connectionPoints: ConnectionPoint[];
+	// Computed properties
+	readonly totalLength: number;
+	readonly segmentCount: number;
+	readonly boundingBox: {
+		minX: number;
+		minY: number;
+		maxX: number;
+		maxY: number;
+	};
+}
+
 export interface DungeonMap {
 	id: string;
 	name: string;
 	rooms: Room[];
 	corridors: Corridor[];
+	mergedCorridors: MergedCorridor[];
 	entranceDoor?: ExteriorDoor;
 	createdAt: Date;
 	gridSize: number;
