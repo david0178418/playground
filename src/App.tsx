@@ -16,6 +16,11 @@ export default function App() {
 						Dungeon Generator
 					</ListItemText>
 				</ListItem>
+				<ListItem component={Link} to="/dungeon-crawler">
+					<ListItemText>
+						Dungeon Crawler Game
+					</ListItemText>
+				</ListItem>
 			</List>
 		</Container>
 	);

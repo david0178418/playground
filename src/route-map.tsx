@@ -3,6 +3,7 @@ import "./index.css";
 import App from "./App";
 import Foo from "./projects/foo/foo";
 import DungeonGenerator from "./projects/dungeon-generator";
+import DungeonCrawler from "./projects/dungeon-crawler";
 import { Fab } from "@mui/material";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
@@ -24,6 +25,10 @@ export default function RouteMap() {
 					<Route
 						path="dungeon-generator"
 						element={<DungeonGenerator />}
+					/>
+					<Route
+						path="dungeon-crawler"
+						element={<DungeonCrawler />}
 					/>
 				</Route>
 			</Routes>
