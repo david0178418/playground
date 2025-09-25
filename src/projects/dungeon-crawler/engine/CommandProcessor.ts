@@ -744,7 +744,7 @@ Examples:
 			return { success: false, message: `There's no ${targetName} here to activate.` };
 		}
 
-		const result = this.environmentalSystem.activateInteractiveElement(element, gameState);
+		const result = this.environmentalSystem.activateInteractiveElement(gameState.character, element, gameState);
 		return { success: result.success, message: result.message };
 	}
 
@@ -767,7 +767,7 @@ Examples:
 			return { success: false, message: `There's no ${targetName} here to pull.` };
 		}
 
-		const result = this.environmentalSystem.activateInteractiveElement(element, gameState);
+		const result = this.environmentalSystem.activateInteractiveElement(gameState.character, element, gameState);
 		return { success: result.success, message: result.message };
 	}
 
@@ -790,7 +790,7 @@ Examples:
 			return { success: false, message: `There's no ${targetName} here to push.` };
 		}
 
-		const result = this.environmentalSystem.activateInteractiveElement(element, gameState);
+		const result = this.environmentalSystem.activateInteractiveElement(gameState.character, element, gameState);
 		return { success: result.success, message: result.message };
 	}
 
@@ -810,7 +810,7 @@ Examples:
 				e => e.name.toLowerCase().includes(targetName.toLowerCase())
 			);
 			if (element) {
-				const result = this.environmentalSystem.activateInteractiveElement(element, gameState);
+				const result = this.environmentalSystem.activateInteractiveElement(gameState.character, element, gameState);
 				return { success: result.success, message: result.message };
 			}
 		}
@@ -823,7 +823,7 @@ Examples:
 		// Process environmental effects for this turn
 		const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
 		if (currentRoom && currentRoom.hazards && currentRoom.hazards.length > 0) {
-			const results = this.environmentalSystem.processEnvironmentalEffects(currentRoom, gameState.character);
+			const results = this.environmentalSystem.processEnvironmentalEffects(gameState.character, currentRoom);
 			if (results.length > 0) {
 				return {
 					success: true,

@@ -1,8 +1,10 @@
 import type { Enemy, Attack, LootTable, LootEntry } from '../models/Enemy';
 import { EnemyType } from '../models/Enemy';
 import type { Item } from '../models/Character';
+import type { EnemyAbility } from '../models/EnemyAbility';
 import { RandomGenerator } from '../utils/RandomGenerator';
 import enemyData from '../data/enemies.json';
+import enemyAbilitiesData from '../data/enemy-abilities.json';
 
 interface EnemyTemplate {
 	name: string;
@@ -34,10 +36,14 @@ interface EnemyTemplate {
 export class EnemyGenerator {
 	private rng: RandomGenerator;
 	private templates: Record<string, EnemyTemplate>;
+	private enemyAbilities: Record<string, EnemyAbility>;
+	private abilityMappings: Record<string, string[]>;
 
 	constructor(rng: RandomGenerator) {
 		this.rng = rng;
 		this.templates = enemyData.templates as Record<string, EnemyTemplate>;
+		this.enemyAbilities = enemyAbilitiesData.abilities as Record<string, EnemyAbility>;
+		this.abilityMappings = (enemyAbilitiesData as any).enemyAbilityMappings;
 	}
 
 	generateEncounter(roomDepth: number, isBossRoom: boolean = false): Enemy[] {
@@ -86,7 +92,9 @@ export class EnemyGenerator {
 			},
 			ac: scaledTemplate.baseAc,
 			attacks: scaledTemplate.attacks,
-			loot: this.generateLootTable(template.loot)
+			loot: this.generateLootTable(template.loot),
+			abilities: this.assignAbilities(enemyType, level),
+			resources: this.generateResources(enemyType, level)
 		};
 
 		return enemy;
@@ -258,5 +266,78 @@ export class EnemyGenerator {
 		baseChance = Math.min(0.8, baseChance); // Cap at 80%
 
 		return this.rng.chance(baseChance);
+	}
+
+	private assignAbilities(enemyType: string, level: number): EnemyAbility[] {
+		const abilities: EnemyAbility[] = [];
+		const abilityIds = this.abilityMappings[enemyType] || [];
+
+		for (const abilityId of abilityIds) {
+			const abilityTemplate = this.enemyAbilities[abilityId];
+			if (abilityTemplate) {
+				// Create a copy of the ability for this enemy instance
+				const ability: EnemyAbility = {
+					...abilityTemplate,
+					id: `${abilityId}-${Date.now()}-${Math.random()}`,
+					// Scale ability based on enemy level
+					priority: abilityTemplate.priority + (level * 2)
+				};
+
+				// Scale damage/healing based on level
+				if (ability.effect.damage) {
+					ability.effect.damage = this.scaleDiceRoll(ability.effect.damage, level);
+				}
+				if (ability.effect.healing) {
+					ability.effect.healing = this.scaleDiceRoll(ability.effect.healing, level);
+				}
+
+				abilities.push(ability);
+			}
+		}
+
+		return abilities;
+	}
+
+	private generateResources(enemyType: string, level: number) {
+		const resources: any = {};
+
+		// Assign resources based on enemy type
+		switch (enemyType) {
+			case 'dragon_wyrmling':
+				resources.energy = {
+					current: 20 + (level * 5),
+					max: 20 + (level * 5)
+				};
+				break;
+			case 'skeleton':
+			case 'bandit':
+				// Some enemies might have mana for abilities
+				if (this.rng.chance(0.3)) {
+					resources.mana = {
+						current: 10 + (level * 2),
+						max: 10 + (level * 2)
+					};
+				}
+				break;
+			case 'orc':
+				resources.rage = {
+					current: 0, // Rage builds up during combat
+					max: 15 + (level * 3)
+				};
+				break;
+		}
+
+		return Object.keys(resources).length > 0 ? resources : undefined;
+	}
+
+	private scaleDiceRoll(diceRoll: string, level: number): string {
+		// Simple scaling: add level/3 to modifier
+		const modifier = Math.floor(level / 3);
+		if (modifier > 0) {
+			return diceRoll.includes('+') ?
+				diceRoll.replace(/\+(\d+)/, (_, p1) => `+${parseInt(p1) + modifier}`) :
+				`${diceRoll}+${modifier}`;
+		}
+		return diceRoll;
 	}
 }

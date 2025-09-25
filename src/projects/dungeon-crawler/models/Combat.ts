@@ -63,7 +63,9 @@ export enum CombatActionType {
 	DEFEND = "defend",
 	USE_ITEM = "use_item",
 	FLEE = "flee",
-	CAST_SPELL = "cast_spell"
+	CAST_SPELL = "cast_spell",
+	SPECIAL_ABILITY = "special_ability",
+	MOVE = "move"
 }
 
 export enum CombatStatus {

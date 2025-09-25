@@ -1,0 +1,244 @@
+{
+  "abilities": {
+    "spider_web": {
+      "id": "spider_web",
+      "name": "Web Shot",
+      "description": "Shoots sticky webbing to restrain the target",
+      "type": "active",
+      "targetType": "enemy",
+      "cooldown": 3,
+      "cost": {
+        "type": "none",
+        "amount": 0
+      },
+      "effect": {
+        "type": "debuff",
+        "statusEffect": {
+          "name": "Webbed",
+          "description": "Restrained by spider webs",
+          "type": "restrained",
+          "duration": 3,
+          "modifier": -2
+        },
+        "description": "Target becomes restrained, reducing their movement and attack accuracy"
+      },
+      "conditions": [],
+      "priority": 80
+    },
+    "goblin_gang_up": {
+      "id": "goblin_gang_up",
+      "name": "Gang Up",
+      "description": "Coordinates with other goblins to gain advantage",
+      "type": "active",
+      "targetType": "self",
+      "cooldown": 5,
+      "cost": {
+        "type": "none",
+        "amount": 0
+      },
+      "effect": {
+        "type": "buff",
+        "statusEffect": {
+          "name": "Pack Tactics",
+          "description": "Fighting with pack coordination",
+          "type": "strength",
+          "duration": 4,
+          "modifier": 3
+        },
+        "description": "Gains bonus to attack and damage when allies are present"
+      },
+      "conditions": [
+        {
+          "type": "ally_count",
+          "value": 1,
+          "comparison": "greater_than"
+        }
+      ],
+      "priority": 70
+    },
+    "orc_rage": {
+      "id": "orc_rage",
+      "name": "Berserker Rage",
+      "description": "Enters a wild rage, increasing damage but reducing defense",
+      "type": "active",
+      "targetType": "self",
+      "cooldown": 6,
+      "cost": {
+        "type": "health",
+        "amount": 2
+      },
+      "effect": {
+        "type": "buff",
+        "statusEffect": {
+          "name": "Raging",
+          "description": "Berserker fury increases damage but reduces AC",
+          "type": "rage",
+          "duration": 5,
+          "modifier": 5
+        },
+        "description": "Deals extra damage but becomes easier to hit"
+      },
+      "conditions": [
+        {
+          "type": "health_percentage",
+          "value": 60,
+          "comparison": "less_than"
+        }
+      ],
+      "priority": 85
+    },
+    "skeleton_formation": {
+      "id": "skeleton_formation",
+      "name": "Undead Formation",
+      "description": "Organizes with other undead into a defensive formation",
+      "type": "active",
+      "targetType": "all_allies",
+      "cooldown": 8,
+      "cost": {
+        "type": "none",
+        "amount": 0
+      },
+      "effect": {
+        "type": "buff",
+        "statusEffect": {
+          "name": "Formation Fighting",
+          "description": "Increased AC and coordination with allies",
+          "type": "strength",
+          "duration": 6,
+          "modifier": 2
+        },
+        "description": "All undead allies gain defensive bonuses and coordination"
+      },
+      "conditions": [
+        {
+          "type": "ally_count",
+          "value": 1,
+          "comparison": "greater_than"
+        }
+      ],
+      "priority": 65
+    },
+    "dragon_breath": {
+      "id": "dragon_breath",
+      "name": "Fire Breath",
+      "description": "Breathes a cone of intense flames",
+      "type": "active",
+      "targetType": "area",
+      "cooldown": 5,
+      "cost": {
+        "type": "energy",
+        "amount": 10
+      },
+      "effect": {
+        "type": "damage",
+        "damage": "7d6",
+        "areaEffect": {
+          "shape": "cone",
+          "size": 30,
+          "affectsAllies": false,
+          "affectsEnemies": true
+        },
+        "description": "Devastating fire damage in a cone area"
+      },
+      "conditions": [
+        {
+          "type": "round_number",
+          "value": 2,
+          "comparison": "greater_than"
+        }
+      ],
+      "priority": 95
+    },
+    "rat_swarm": {
+      "id": "rat_swarm",
+      "name": "Swarm Attack",
+      "description": "Coordinates with other rats for overwhelming numbers",
+      "type": "reactive",
+      "targetType": "self",
+      "cooldown": 4,
+      "cost": {
+        "type": "none",
+        "amount": 0
+      },
+      "effect": {
+        "type": "buff",
+        "statusEffect": {
+          "name": "Swarming",
+          "description": "Part of an overwhelming swarm",
+          "type": "haste",
+          "duration": 3,
+          "modifier": 2
+        },
+        "description": "Gains extra attacks when in a group"
+      },
+      "conditions": [
+        {
+          "type": "ally_count",
+          "value": 2,
+          "comparison": "greater_than"
+        }
+      ],
+      "priority": 60
+    },
+    "bandit_dirty_fighting": {
+      "id": "bandit_dirty_fighting",
+      "name": "Dirty Fighting",
+      "description": "Uses underhanded tactics to gain an advantage",
+      "type": "active",
+      "targetType": "enemy",
+      "cooldown": 4,
+      "cost": {
+        "type": "none",
+        "amount": 0
+      },
+      "effect": {
+        "type": "debuff",
+        "damage": "1d4",
+        "statusEffect": {
+          "name": "Blinded",
+          "description": "Temporarily blinded by dirt or sand",
+          "type": "weakness",
+          "duration": 2,
+          "modifier": -3
+        },
+        "description": "Small damage plus blindness effect"
+      },
+      "conditions": [],
+      "priority": 75
+    },
+    "healing_potion": {
+      "id": "healing_potion",
+      "name": "Drink Healing Potion",
+      "description": "Quickly drinks a healing potion",
+      "type": "active",
+      "targetType": "self",
+      "cooldown": 10,
+      "cost": {
+        "type": "none",
+        "amount": 0
+      },
+      "effect": {
+        "type": "healing",
+        "healing": "2d4+2",
+        "description": "Restores health"
+      },
+      "conditions": [
+        {
+          "type": "health_percentage",
+          "value": 30,
+          "comparison": "less_than"
+        }
+      ],
+      "priority": 90
+    }
+  },
+  "enemyAbilityMappings": {
+    "goblin": ["goblin_gang_up"],
+    "orc": ["orc_rage"],
+    "skeleton": ["skeleton_formation"],
+    "rat": ["rat_swarm"],
+    "spider": ["spider_web"],
+    "bandit": ["bandit_dirty_fighting", "healing_potion"],
+    "dragon_wyrmling": ["dragon_breath", "healing_potion"]
+  }
+}

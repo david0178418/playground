@@ -11,15 +11,12 @@ import {
 	StatType
 } from '../models/Magic';
 import { DiceRoller } from '../utils/DiceRoller';
-import { RandomGenerator } from '../utils/RandomGenerator';
 import spellData from '../data/spells.json';
 
 export class MagicSystem {
 	private spells: Record<string, Spell>;
-	private _rng: RandomGenerator;
 
 	constructor() {
-		this._rng = new RandomGenerator();
 		this.spells = this.loadSpells();
 	}
 

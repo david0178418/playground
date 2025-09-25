@@ -119,11 +119,8 @@ export class GameEngine {
 
 				// Process enemy turn
 				if (currentParticipant?.type === ParticipantType.ENEMY && currentParticipant.isActive) {
-					const enemyActions = this.combatSystem.executeEnemyAction(
-						currentParticipant,
-						CombatActionType.ATTACK,
-						combatState
-					);
+					// Get AI decision and execute individual enemy action
+					const enemyActions = this.combatSystem.processSingleEnemyTurn(currentParticipant, combatState);
 
 					// Add enemy action messages to log
 					for (const action of enemyActions) {
@@ -493,17 +490,17 @@ export class GameEngine {
 
 		// Process environmental hazards
 		if (currentRoom.hazards && currentRoom.hazards.length > 0) {
-			const results = this.environmentalSystem.processEnvironmentalEffects(currentRoom, gameState.character);
-			for (const message of results) {
-				this.addMessage(gameState, message, MessageType.SYSTEM);
+			const results = this.environmentalSystem.processEnvironmentalEffects(gameState.character, currentRoom);
+			for (const result of results) {
+				this.addMessage(gameState, result.message, MessageType.SYSTEM);
 			}
 		}
 
 		// Process character status effects
 		if (gameState.character.statusEffects) {
-			const statusResults = this.environmentalSystem.processStatusEffects(gameState.character);
-			for (const message of statusResults) {
-				this.addMessage(gameState, message, MessageType.SYSTEM);
+			const statusResult = this.environmentalSystem.processStatusEffects(gameState.character);
+			if (statusResult) {
+				this.addMessage(gameState, statusResult.message, MessageType.SYSTEM);
 			}
 		}
 	}

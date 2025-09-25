@@ -15,12 +15,19 @@ import {
 } from '../models/Combat';
 import { DiceRoller } from '../utils/DiceRoller';
 import { RandomGenerator } from '../utils/RandomGenerator';
+import { AIBehaviorSystem } from './AIBehaviorSystem';
+import type { EnemyAbility } from '../models/EnemyAbility';
+import enemyAbilitiesData from '../data/enemy-abilities.json';
 
 export class CombatSystem {
 	private rng: RandomGenerator;
+	private aiBehavior: AIBehaviorSystem;
+	private enemyAbilities: Record<string, EnemyAbility>;
 
 	constructor(seed?: string) {
 		this.rng = new RandomGenerator(seed);
+		this.aiBehavior = new AIBehaviorSystem(seed);
+		this.enemyAbilities = enemyAbilitiesData.abilities as Record<string, EnemyAbility>;
 	}
 
 	initiateCombat(
@@ -149,12 +156,25 @@ export class CombatSystem {
 		for (const enemy of activeEnemies) {
 			if (!enemy.enemy) continue;
 
-			const enemyAction = this.getEnemyAction(enemy, combatState);
-			const actionResults = this.executeEnemyAction(enemy, enemyAction, combatState);
+			const aiDecision = this.getEnemyAction(enemy, combatState);
+			const actionResults = this.executeEnemyAction(enemy, aiDecision.action, combatState, aiDecision.targetId, aiDecision.abilityId);
 			actions.push(...actionResults);
 		}
 
 		return actions;
+	}
+
+	processSingleEnemyTurn(enemy: CombatParticipant, combatState: CombatState): CombatAction[] {
+		if (!enemy.enemy) return [];
+
+		const aiDecision = this.getEnemyAction(enemy, combatState);
+		return this.executeEnemyAction(
+			enemy,
+			aiDecision.action,
+			combatState,
+			aiDecision.targetId,
+			aiDecision.abilityId
+		);
 	}
 
 	checkCombatEnd(combatState: CombatState): CombatStatus {
@@ -275,25 +295,46 @@ export class CombatSystem {
 		return this.rng.chance(fleeChance);
 	}
 
-	private getEnemyAction(_enemy: CombatParticipant, combatState: CombatState): CombatActionType {
-		// Simple AI: always attack if possible
-		const player = this.getActivePlayer(combatState);
-		if (player?.isActive) {
-			return CombatActionType.ATTACK;
+	private getEnemyAction(enemy: CombatParticipant, combatState: CombatState): { action: CombatActionType; targetId?: string; abilityId?: string } {
+		if (!enemy.enemy) {
+			return { action: CombatActionType.DEFEND };
 		}
-		return CombatActionType.DEFEND;
+
+		// Get available abilities for this enemy
+		const availableAbilities = this.getEnemyAbilities(enemy.enemy);
+
+		// Use AI behavior system to make decision
+		const aiDecision = this.aiBehavior.selectEnemyAction(enemy, combatState, availableAbilities);
+
+		return {
+			action: aiDecision.action,
+			targetId: aiDecision.targetId,
+			abilityId: aiDecision.abilityId
+		};
 	}
 
 	executeEnemyAction(
 		enemy: CombatParticipant,
 		action: CombatActionType,
-		combatState: CombatState
+		combatState: CombatState,
+		targetId?: string,
+		abilityId?: string
 	): CombatAction[] {
 		if (!enemy.enemy) return [];
 
 		switch (action) {
 			case CombatActionType.ATTACK:
 				return this.executeEnemyAttack(enemy, combatState);
+			case CombatActionType.SPECIAL_ABILITY:
+			case CombatActionType.CAST_SPELL:
+				if (abilityId) {
+					return this.executeEnemyAbility(enemy, abilityId, combatState, targetId);
+				}
+				return [];
+			case CombatActionType.DEFEND:
+				return this.executeEnemyDefend(enemy);
+			case CombatActionType.FLEE:
+				return this.executeEnemyFlee(enemy, combatState);
 			default:
 				return [];
 		}
@@ -333,9 +374,19 @@ export class CombatSystem {
 
 		let damage = 0;
 		if (hit) {
-			damage = critical
-				? DiceRoller.parseDiceRoll(attack.damageRoll) * 2
-				: DiceRoller.parseDiceRoll(attack.damageRoll);
+			// Handle special case of "0" damage (like web attacks)
+			if (attack.damageRoll === "0") {
+				damage = 0;
+			} else {
+				try {
+					damage = critical
+						? DiceRoller.parseDiceRoll(attack.damageRoll) * 2
+						: DiceRoller.parseDiceRoll(attack.damageRoll);
+				} catch (error) {
+					console.warn(`Invalid damage roll for ${enemy.name}: ${attack.damageRoll}`, error);
+					damage = 0;
+				}
+			}
 		}
 
 		const description = hit
@@ -385,5 +436,130 @@ export class CombatSystem {
 
 	private getActivePlayer(combatState: CombatState): CombatParticipant | undefined {
 		return combatState.participants.find(p => p.type === ParticipantType.PLAYER);
+	}
+
+	private getEnemyAbilities(enemy: Enemy): EnemyAbility[] {
+		if (enemy.abilities) {
+			return enemy.abilities;
+		}
+
+		// Get abilities from data based on enemy type
+		const abilityMappings = (enemyAbilitiesData as any).enemyAbilityMappings;
+		const enemyType = enemy.type.toLowerCase();
+		const abilityIds = abilityMappings[enemyType] || [];
+
+		return abilityIds.map((id: string) => this.enemyAbilities[id]).filter(Boolean);
+	}
+
+	private executeEnemyAbility(
+		enemy: CombatParticipant,
+		abilityId: string,
+		combatState: CombatState,
+		targetId?: string
+	): CombatAction[] {
+		const ability = this.enemyAbilities[abilityId];
+		if (!ability || !enemy.enemy) return [];
+
+		// Mark ability as used
+		ability.lastUsedRound = combatState.round;
+
+		const target = targetId ? combatState.participants.find(p => p.id === targetId) : null;
+		const actions: CombatAction[] = [];
+
+		// Execute ability effect
+		switch (ability.effect.type) {
+			case 'damage':
+				if (target?.character && ability.effect.damage) {
+					try {
+						const damage = DiceRoller.parseDiceRoll(ability.effect.damage);
+						target.character.hp.current = Math.max(0, target.character.hp.current - damage);
+						if (target.character.hp.current === 0) {
+							target.isActive = false;
+						}
+
+						actions.push({
+							type: CombatActionType.SPECIAL_ABILITY,
+							actor: enemy.id,
+							target: targetId,
+							damage,
+							description: `${enemy.name} uses ${ability.name}! ${ability.effect.description}. ${damage} damage dealt!`
+						});
+					} catch (error) {
+						actions.push({
+							type: CombatActionType.SPECIAL_ABILITY,
+							actor: enemy.id,
+							description: `${enemy.name} tries to use ${ability.name} but it fails!`
+						});
+					}
+				}
+				break;
+
+			case 'healing':
+				if (ability.effect.healing) {
+					try {
+						const healing = DiceRoller.parseDiceRoll(ability.effect.healing);
+						enemy.enemy.hp.current = Math.min(enemy.enemy.hp.max, enemy.enemy.hp.current + healing);
+
+						actions.push({
+							type: CombatActionType.SPECIAL_ABILITY,
+							actor: enemy.id,
+							healing,
+							description: `${enemy.name} uses ${ability.name}! ${ability.effect.description}. Healed ${healing} HP!`
+						});
+					} catch (error) {
+						actions.push({
+							type: CombatActionType.SPECIAL_ABILITY,
+							actor: enemy.id,
+							description: `${enemy.name} tries to use ${ability.name} but it fails!`
+						});
+					}
+				}
+				break;
+
+			case 'buff':
+			case 'debuff':
+				// Apply status effects (simplified for now)
+				const statusTarget = ability.targetType === 'self' ? enemy :
+					(target || enemy);
+
+				if (ability.effect.statusEffect) {
+					// Add status effect to target
+					actions.push({
+						type: CombatActionType.SPECIAL_ABILITY,
+						actor: enemy.id,
+						target: statusTarget.id,
+						description: `${enemy.name} uses ${ability.name}! ${ability.effect.description}`
+					});
+				}
+				break;
+
+			default:
+				actions.push({
+					type: CombatActionType.SPECIAL_ABILITY,
+					actor: enemy.id,
+					description: `${enemy.name} uses ${ability.name}! ${ability.effect.description}`
+				});
+		}
+
+		return actions;
+	}
+
+	private executeEnemyDefend(enemy: CombatParticipant): CombatAction[] {
+		this.applyDefendingStance(enemy);
+		return [{
+			type: CombatActionType.DEFEND,
+			actor: enemy.id,
+			description: `${enemy.name} takes a defensive stance.`
+		}];
+	}
+
+	private executeEnemyFlee(enemy: CombatParticipant, _combatState: CombatState): CombatAction[] {
+		// Remove enemy from combat
+		enemy.isActive = false;
+		return [{
+			type: CombatActionType.FLEE,
+			actor: enemy.id,
+			description: `${enemy.name} flees from combat!`
+		}];
 	}
 }

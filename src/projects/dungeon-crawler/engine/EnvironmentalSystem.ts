@@ -170,7 +170,7 @@ export class EnvironmentalSystem {
 		};
 	}
 
-	private processStatusEffects(character: Character): EnvironmentalResult | null {
+	processStatusEffects(character: Character): EnvironmentalResult | null {
 		if (!character.statusEffects || character.statusEffects.length === 0) {
 			return null;
 		}
