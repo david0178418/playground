@@ -4,9 +4,11 @@ export interface Character {
 	level: number;
 	stats: StatBlock;
 	hp: { current: number; max: number };
+	mana?: { current: number; max: number }; // For spellcasters
 	equipment: Equipment;
 	inventory: Item[];
 	experience: number;
+	classAbilities: string[]; // IDs of unlocked abilities
 }
 
 export interface StatBlock {

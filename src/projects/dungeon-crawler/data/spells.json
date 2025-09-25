@@ -1,0 +1,270 @@
+{
+  "wizard_spells": {
+    "magic_missile": {
+      "id": "magic_missile",
+      "name": "Magic Missile",
+      "description": "Fires 3 magical darts that automatically hit for 1d4+1 damage each",
+      "level": 1,
+      "manaCost": 1,
+      "school": "evocation",
+      "castingTime": "action",
+      "range": "120 feet",
+      "damage": "3d4+3",
+      "targetType": "single",
+      "effects": [
+        {
+          "type": "damage",
+          "damageType": "force",
+          "value": "3d4+3",
+          "autoHit": true
+        }
+      ]
+    },
+    "fireball": {
+      "id": "fireball",
+      "name": "Fireball",
+      "description": "Explodes in a burst of flame dealing 8d6 fire damage to all enemies",
+      "level": 3,
+      "manaCost": 3,
+      "school": "evocation",
+      "castingTime": "action",
+      "range": "150 feet",
+      "damage": "8d6",
+      "targetType": "area",
+      "effects": [
+        {
+          "type": "damage",
+          "damageType": "fire",
+          "value": "8d6",
+          "saveType": "dexterity",
+          "saveDC": 15
+        }
+      ]
+    },
+    "shield": {
+      "id": "shield",
+      "name": "Shield",
+      "description": "Grants +5 AC until the start of your next turn",
+      "level": 1,
+      "manaCost": 1,
+      "school": "abjuration",
+      "castingTime": "reaction",
+      "range": "self",
+      "duration": 1,
+      "targetType": "self",
+      "effects": [
+        {
+          "type": "ac_bonus",
+          "value": 5,
+          "duration": 1
+        }
+      ]
+    },
+    "mage_armor": {
+      "id": "mage_armor",
+      "name": "Mage Armor",
+      "description": "Sets base AC to 13 + Dex modifier for 8 hours",
+      "level": 1,
+      "manaCost": 1,
+      "school": "abjuration",
+      "castingTime": "action",
+      "range": "self",
+      "duration": 480,
+      "targetType": "self",
+      "effects": [
+        {
+          "type": "ac_base",
+          "value": 13,
+          "duration": 480
+        }
+      ]
+    },
+    "burning_hands": {
+      "id": "burning_hands",
+      "name": "Burning Hands",
+      "description": "Sprays fire in a cone, dealing 3d6 fire damage",
+      "level": 1,
+      "manaCost": 1,
+      "school": "evocation",
+      "castingTime": "action",
+      "range": "15 feet",
+      "damage": "3d6",
+      "targetType": "area",
+      "effects": [
+        {
+          "type": "damage",
+          "damageType": "fire",
+          "value": "3d6",
+          "saveType": "dexterity",
+          "saveDC": 13
+        }
+      ]
+    },
+    "detect_magic": {
+      "id": "detect_magic",
+      "name": "Detect Magic",
+      "description": "Reveals magical auras and hidden magical items in the area",
+      "level": 1,
+      "manaCost": 1,
+      "school": "divination",
+      "castingTime": "action",
+      "range": "self",
+      "duration": 10,
+      "targetType": "self",
+      "ritual": true,
+      "effects": [
+        {
+          "type": "utility",
+          "effect": "detect_magic",
+          "duration": 10
+        }
+      ]
+    }
+  },
+  "cleric_spells": {
+    "heal": {
+      "id": "heal",
+      "name": "Heal",
+      "description": "Restores 1d8+wisdom modifier hit points",
+      "level": 1,
+      "manaCost": 1,
+      "school": "evocation",
+      "castingTime": "action",
+      "range": "touch",
+      "targetType": "single",
+      "effects": [
+        {
+          "type": "healing",
+          "value": "1d8",
+          "scalingAttribute": "wisdom"
+        }
+      ]
+    },
+    "cure_wounds": {
+      "id": "cure_wounds",
+      "name": "Cure Wounds",
+      "description": "Heals 2d8+wisdom modifier hit points",
+      "level": 2,
+      "manaCost": 2,
+      "school": "evocation",
+      "castingTime": "action",
+      "range": "touch",
+      "targetType": "single",
+      "effects": [
+        {
+          "type": "healing",
+          "value": "2d8",
+          "scalingAttribute": "wisdom"
+        }
+      ]
+    },
+    "turn_undead": {
+      "id": "turn_undead",
+      "name": "Turn Undead",
+      "description": "Forces undead creatures to flee for 1 minute",
+      "level": 1,
+      "manaCost": 1,
+      "school": "enchantment",
+      "castingTime": "action",
+      "range": "30 feet",
+      "duration": 10,
+      "targetType": "area",
+      "effects": [
+        {
+          "type": "fear",
+          "target": "undead",
+          "duration": 10,
+          "saveType": "wisdom",
+          "saveDC": 13
+        }
+      ]
+    },
+    "bless": {
+      "id": "bless",
+      "name": "Bless",
+      "description": "Grants +1d4 to attack rolls and saving throws for 10 minutes",
+      "level": 1,
+      "manaCost": 1,
+      "school": "enchantment",
+      "castingTime": "action",
+      "range": "30 feet",
+      "duration": 600,
+      "targetType": "single",
+      "effects": [
+        {
+          "type": "attack_bonus",
+          "value": "1d4",
+          "duration": 600
+        },
+        {
+          "type": "save_bonus",
+          "value": "1d4",
+          "duration": 600
+        }
+      ]
+    },
+    "sanctuary": {
+      "id": "sanctuary",
+      "name": "Sanctuary",
+      "description": "Protects a creature from attacks until they attack or cast a spell",
+      "level": 1,
+      "manaCost": 1,
+      "school": "abjuration",
+      "castingTime": "bonus_action",
+      "range": "30 feet",
+      "duration": 60,
+      "targetType": "single",
+      "effects": [
+        {
+          "type": "sanctuary",
+          "duration": 60,
+          "saveType": "wisdom",
+          "saveDC": 13
+        }
+      ]
+    },
+    "spiritual_weapon": {
+      "id": "spiritual_weapon",
+      "name": "Spiritual Weapon",
+      "description": "Creates a floating weapon that attacks for 1d8+wisdom force damage",
+      "level": 2,
+      "manaCost": 2,
+      "school": "evocation",
+      "castingTime": "bonus_action",
+      "range": "60 feet",
+      "duration": 60,
+      "targetType": "utility",
+      "effects": [
+        {
+          "type": "summon",
+          "summonType": "spiritual_weapon",
+          "duration": 60,
+          "damage": "1d8",
+          "scalingAttribute": "wisdom"
+        }
+      ]
+    }
+  },
+  "spell_schools": {
+    "evocation": {
+      "name": "Evocation",
+      "description": "Magic that manipulates energy or taps an unseen source of power"
+    },
+    "abjuration": {
+      "name": "Abjuration",
+      "description": "Protective spells that block, banish, or guard"
+    },
+    "enchantment": {
+      "name": "Enchantment",
+      "description": "Magic that affects minds, influencing or controlling behavior"
+    },
+    "divination": {
+      "name": "Divination",
+      "description": "Magic that reveals information, whether secrets long forgotten or truths never before spoken"
+    }
+  },
+  "starting_spells": {
+    "wizard": ["magic_missile", "shield", "burning_hands"],
+    "cleric": ["heal", "bless", "turn_undead"]
+  }
+}

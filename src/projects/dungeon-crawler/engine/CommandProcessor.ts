@@ -2,6 +2,7 @@ import type { Command } from '../models/Command';
 import { ActionType, Direction } from '../models/Command';
 import type { GameState } from '../models/Room';
 import { MessageType } from '../models/Room';
+import { InteractionSystem } from './InteractionSystem';
 
 export interface CommandResult {
 	success: boolean;
@@ -10,6 +11,11 @@ export interface CommandResult {
 }
 
 export class CommandProcessor {
+	private interactionSystem: InteractionSystem;
+
+	constructor() {
+		this.interactionSystem = new InteractionSystem();
+	}
 	parseCommand(input: string): Command {
 		const words = input.toLowerCase().trim().split(/\s+/);
 		const verb = words[0] || '';
@@ -74,6 +80,30 @@ export class CommandProcessor {
 			case 'escape':
 				return { action: ActionType.FLEE };
 
+			case 'cast':
+			case 'spell':
+				return { action: ActionType.CAST, spellId: target };
+
+			case 'pick':
+			case 'lockpick':
+				if (words[1] === 'lock' || words.includes('lock')) {
+					return { action: ActionType.PICK_LOCK, target };
+				}
+				return { action: ActionType.GET, target };
+
+			case 'detect':
+				if (words[1] === 'traps' || words.includes('traps')) {
+					return { action: ActionType.DETECT_TRAPS };
+				}
+				return { action: ActionType.SEARCH };
+
+			case 'disarm':
+				return { action: ActionType.DISARM_TRAP, target };
+
+			case 'solve':
+			case 'answer':
+				return { action: ActionType.SOLVE_PUZZLE, answer: target };
+
 			case 'rest':
 			case 'sleep':
 				return { action: ActionType.REST };
@@ -124,6 +154,21 @@ export class CommandProcessor {
 
 			case ActionType.DROP:
 				return this.executeDrop(command.target!, gameState);
+
+			case ActionType.CAST:
+				return this.executeCast(command.spellId!, gameState);
+
+			case ActionType.PICK_LOCK:
+				return this.executePickLock(command.target, gameState);
+
+			case ActionType.DETECT_TRAPS:
+				return this.executeDetectTraps(gameState);
+
+			case ActionType.DISARM_TRAP:
+				return this.executeDisarmTrap(command.target, gameState);
+
+			case ActionType.SOLVE_PUZZLE:
+				return this.executeSolvePuzzle(command.answer, gameState);
 
 			default:
 				return {
@@ -312,6 +357,8 @@ Movement: north (n), south (s), east (e), west (w)
 Looking: look (l), search, examine <item>
 Items: get <item>, drop <item>, inventory (i), equip <item>, use <item>
 Combat: attack <enemy>, defend, flee
+Magic: cast <spell>
+Interaction: pick lock <direction>, detect traps, disarm <trap>, solve <answer>
 Other: rest, help
 
 Examples:
@@ -319,6 +366,11 @@ Examples:
 - look
 - get sword
 - attack goblin
+- cast fireball
+- pick lock north
+- detect traps
+- disarm poison dart
+- solve echo
 - inventory`;
 
 		return { success: true, message: helpText };
@@ -491,6 +543,143 @@ Examples:
 		} else {
 			return { success: true, message: "You rest, but you are already at full health." };
 		}
+	}
+
+	private executeCast(spellId: string, _gameState: GameState): CommandResult {
+		if (!spellId) {
+			return { success: false, message: "Cast what spell? Use the spellbook interface to cast spells." };
+		}
+
+		// Text-based spell casting is handled through the UI
+		// This provides a helpful message to use the spellbook
+		return {
+			success: false,
+			message: "Use the 'Spell Book' button to cast spells with a visual interface. Type 'help' for other commands."
+		};
+	}
+
+	private executePickLock(direction: string | undefined, gameState: GameState): CommandResult {
+		const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
+		if (!currentRoom) {
+			return { success: false, message: "You are in an unknown location." };
+		}
+
+		if (!direction) {
+			return { success: false, message: "Pick lock in which direction? (north, south, east, west)" };
+		}
+
+		const dir = this.parseDirectionFromString(direction);
+		if (!dir) {
+			return { success: false, message: "Invalid direction. Try north, south, east, west." };
+		}
+
+		const lock = currentRoom.lockedExits?.get(dir);
+		if (!lock) {
+			return { success: false, message: `There is no locked door to the ${dir}.` };
+		}
+
+		const result = this.interactionSystem.attemptLockPicking(gameState.character, lock);
+		return { success: result.success, message: result.message };
+	}
+
+	private executeDetectTraps(gameState: GameState): CommandResult {
+		const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
+		if (!currentRoom || !currentRoom.traps || currentRoom.traps.length === 0) {
+			return { success: true, message: "You carefully search for traps but find none." };
+		}
+
+		const messages: string[] = [];
+		let foundAny = false;
+
+		for (const trap of currentRoom.traps) {
+			if (!trap.detected) {
+				const result = this.interactionSystem.attemptTrapDetection(gameState.character, trap);
+				messages.push(result.message);
+				if (result.success) foundAny = true;
+			}
+		}
+
+		if (messages.length === 0) {
+			return { success: true, message: "You've already detected all the traps in this area." };
+		}
+
+		return {
+			success: foundAny,
+			message: messages.join(' ')
+		};
+	}
+
+	private executeDisarmTrap(trapName: string | undefined, gameState: GameState): CommandResult {
+		const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
+		if (!currentRoom || !currentRoom.traps || currentRoom.traps.length === 0) {
+			return { success: false, message: "There are no traps here to disarm." };
+		}
+
+		if (!trapName) {
+			const detectedTraps = currentRoom.traps.filter(t => t.detected && !t.disarmed);
+			if (detectedTraps.length === 0) {
+				return { success: false, message: "There are no detected traps to disarm." };
+			}
+			if (detectedTraps.length === 1) {
+				const trap = detectedTraps[0];
+				if (trap) {
+					const result = this.interactionSystem.attemptTrapDisarming(gameState.character, trap);
+					return { success: result.success, message: result.message };
+				}
+				return { success: false, message: "No trap found to disarm." };
+			}
+			return { success: false, message: `Which trap? Available: ${detectedTraps.map(t => t.name).join(', ')}` };
+		}
+
+		const trap = currentRoom.traps.find(t => t.name.toLowerCase().includes(trapName.toLowerCase()) && t.detected);
+		if (!trap) {
+			return { success: false, message: "You don't see that trap, or it hasn't been detected yet." };
+		}
+
+		const result = this.interactionSystem.attemptTrapDisarming(gameState.character, trap);
+		return { success: result.success, message: result.message };
+	}
+
+	private executeSolvePuzzle(answer: string | undefined, gameState: GameState): CommandResult {
+		const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
+		if (!currentRoom || !currentRoom.puzzles || currentRoom.puzzles.length === 0) {
+			return { success: false, message: "There are no puzzles here to solve." };
+		}
+
+		if (!answer) {
+			return { success: false, message: "What's your answer to the puzzle?" };
+		}
+
+		const unsolvedPuzzles = currentRoom.puzzles.filter(p => !p.solved);
+		if (unsolvedPuzzles.length === 0) {
+			return { success: false, message: "All puzzles in this room have been solved." };
+		}
+
+		// If there's only one puzzle, use it. Otherwise, use the first unsolved one.
+		const puzzle = unsolvedPuzzles[0];
+		if (puzzle) {
+			const result = this.interactionSystem.attemptPuzzle(gameState.character, puzzle, answer);
+
+			// Add any items to character inventory
+			if (result.success && result.itemsFound) {
+				for (const item of result.itemsFound) {
+					gameState.character.inventory.push(item);
+				}
+			}
+
+			return { success: result.success, message: result.message };
+		}
+
+		return { success: false, message: "No puzzle found to solve." };
+	}
+
+	private parseDirectionFromString(dirStr: string): Direction | undefined {
+		const lower = dirStr.toLowerCase();
+		if (lower.includes('north') || lower === 'n') return Direction.NORTH;
+		if (lower.includes('south') || lower === 's') return Direction.SOUTH;
+		if (lower.includes('east') || lower === 'e') return Direction.EAST;
+		if (lower.includes('west') || lower === 'w') return Direction.WEST;
+		return undefined;
 	}
 
 	private getBasicRoomDescription(room: any): string {

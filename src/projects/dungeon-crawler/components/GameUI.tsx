@@ -1,18 +1,26 @@
-import { Container, Grid, Paper, Typography, Box } from '@mui/material';
+import { useState } from 'react';
+import { Container, Grid, Paper, Typography, Box, Button, Dialog } from '@mui/material';
+import { AutoAwesome as MagicIcon } from '@mui/icons-material';
 import type { GameState } from '../models/Room';
 import { CombatActionType } from '../models/Combat';
 import { MessageLog } from './MessageLog';
 import { CommandInput } from './CommandInput';
 import { CharacterSheet } from './CharacterSheet';
 import { CombatUI } from './CombatUI';
+import { SpellBook } from './SpellBook';
+
+import { GameEngine } from '../engine/GameEngine';
 
 interface GameUIProps {
 	gameState: GameState;
+	gameEngine?: GameEngine;
 	onCommand: (command: string) => void;
 	onCombatAction?: (action: CombatActionType, targetId?: string) => void;
+	onCastSpell?: (spellId: string, targetIds?: string[]) => void;
 }
 
-export function GameUI({ gameState, onCommand, onCombatAction }: GameUIProps) {
+export function GameUI({ gameState, gameEngine, onCommand, onCombatAction, onCastSpell }: GameUIProps) {
+	const [showSpellBook, setShowSpellBook] = useState(false);
 	const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
 
 	return (
@@ -45,6 +53,20 @@ export function GameUI({ gameState, onCommand, onCombatAction }: GameUIProps) {
 					<Box sx={{ mb: 3 }}>
 						<CharacterSheet character={gameState.character} />
 					</Box>
+
+					{/* Spell Book Button */}
+					{gameState.character.mana && onCastSpell && (
+						<Box sx={{ mb: 2 }}>
+							<Button
+								fullWidth
+								variant="outlined"
+								startIcon={<MagicIcon />}
+								onClick={() => setShowSpellBook(true)}
+							>
+								Spell Book
+							</Button>
+						</Box>
+					)}
 
 					{/* Current room info */}
 					<Paper sx={{ p: 2 }}>
@@ -89,6 +111,29 @@ export function GameUI({ gameState, onCommand, onCombatAction }: GameUIProps) {
 					)}
 				</Grid>
 			</Grid>
+
+			{/* Spell Book Dialog */}
+			{showSpellBook && gameState.character.mana && onCastSpell && (
+				<Dialog
+					open={showSpellBook}
+					onClose={() => setShowSpellBook(false)}
+					maxWidth="md"
+					fullWidth
+				>
+					{gameEngine && (
+						<SpellBook
+							character={gameState.character}
+							magicSystem={gameEngine.getMagicSystem()}
+							onCastSpell={(spellId) => {
+								onCastSpell(spellId);
+								setShowSpellBook(false);
+							}}
+							onClose={() => setShowSpellBook(false)}
+							inCombat={!!gameState.combatState}
+						/>
+					)}
+				</Dialog>
+			)}
 		</Container>
 	);
 }

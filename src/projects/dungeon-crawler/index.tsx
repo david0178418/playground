@@ -1,29 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { GameUI } from './components/GameUI';
+import { CharacterCreation } from './components/CharacterCreation';
 import { GameEngine } from './engine/GameEngine';
 import type { GameState } from './models/Room';
+import type { Character } from './models/Character';
 import { CombatActionType } from './models/Combat';
 
 export default function DungeonCrawler() {
 	const [gameEngine] = useState(() => new GameEngine());
 	const [gameState, setGameState] = useState<GameState | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
+	const [showCharacterCreation, setShowCharacterCreation] = useState(true);
+	const [isLoading, setIsLoading] = useState(false);
 
-	useEffect(() => {
-		// Initialize the game
-		const initializeGame = async () => {
-			try {
-				const initialState = await gameEngine.startNewGame();
-				setGameState(initialState);
-			} catch (error) {
-				console.error('Failed to initialize game:', error);
-			} finally {
-				setIsLoading(false);
-			}
-		};
+	const handleCharacterCreated = async (character: Character) => {
+		setIsLoading(true);
+		setShowCharacterCreation(false);
 
-		initializeGame();
-	}, [gameEngine]);
+		try {
+			const initialState = await gameEngine.startNewGame(character);
+			setGameState(initialState);
+		} catch (error) {
+			console.error('Failed to initialize game:', error);
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
 	const handleCommand = async (command: string) => {
 		if (!gameState) return;
@@ -47,6 +48,21 @@ export default function DungeonCrawler() {
 		}
 	};
 
+	const handleCastSpell = async (spellId: string, targetIds?: string[]) => {
+		if (!gameState) return;
+
+		try {
+			const newState = await gameEngine.castSpell(spellId, gameState, targetIds);
+			setGameState(newState);
+		} catch (error) {
+			console.error('Failed to cast spell:', error);
+		}
+	};
+
+	if (showCharacterCreation) {
+		return <CharacterCreation onCharacterCreated={handleCharacterCreated} />;
+	}
+
 	if (isLoading) {
 		return <div>Loading game...</div>;
 	}
@@ -58,8 +74,10 @@ export default function DungeonCrawler() {
 	return (
 		<GameUI
 			gameState={gameState}
+			gameEngine={gameEngine}
 			onCommand={handleCommand}
 			onCombatAction={handleCombatAction}
+			onCastSpell={handleCastSpell}
 		/>
 	);
 }

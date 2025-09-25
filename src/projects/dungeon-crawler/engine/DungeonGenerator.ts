@@ -1,18 +1,21 @@
-import type { Room, Dungeon } from '../models/Room';
-import { Direction, RoomType } from '../models/Room';
+import type { Room, Dungeon, Lock, Trap } from '../models/Room';
+import { Direction, RoomType, LockType, TrapType, TrapEffect } from '../models/Room';
 import { RandomGenerator } from '../utils/RandomGenerator';
 import { EnemyGenerator } from './EnemyGenerator';
 import { ItemGenerator } from './ItemGenerator';
+import { InteractionSystem } from './InteractionSystem';
 
 export class DungeonGenerator {
 	private rng: RandomGenerator;
 	private enemyGenerator: EnemyGenerator;
 	private itemGenerator: ItemGenerator;
+	private interactionSystem: InteractionSystem;
 
 	constructor(rng: RandomGenerator) {
 		this.rng = rng;
 		this.enemyGenerator = new EnemyGenerator(rng);
 		this.itemGenerator = new ItemGenerator(rng);
+		this.interactionSystem = new InteractionSystem();
 	}
 
 	generateDungeon(size: number = 15): Dungeon {
@@ -37,6 +40,9 @@ export class DungeonGenerator {
 		// Place special rooms and content
 		this.placeSpecialRooms(rooms);
 		this.distributeContent(rooms, entranceRoom.id);
+
+		// Add advanced room features
+		this.addAdvancedFeatures(rooms, entranceRoom.id);
 
 		return {
 			id: `dungeon-${Date.now()}`,
@@ -302,6 +308,197 @@ export class DungeonGenerator {
 				searched: false,
 				hidden_items: [this.itemGenerator.generateRandomItem('common' as any, roomDepth)]
 			});
+		}
+	}
+
+	private addAdvancedFeatures(rooms: Map<string, Room>, entranceRoomId: string): void {
+
+		// Add locked doors (20% chance)
+		this.addLockedDoors(rooms);
+
+		// Add traps to rooms (30% chance, excluding entrance)
+		this.addTraps(rooms, entranceRoomId);
+
+		// Add puzzles to special rooms (40% chance)
+		this.addPuzzles(rooms, entranceRoomId);
+	}
+
+	private addLockedDoors(rooms: Map<string, Room>): void {
+		for (const room of rooms.values()) {
+			// Each exit has a 20% chance of being locked
+			const exits = Array.from(room.exits.entries());
+
+			for (const [direction, _targetRoomId] of exits) {
+				if (this.rng.chance(0.2)) {
+					if (!room.lockedExits) {
+						room.lockedExits = new Map();
+					}
+
+					const lockType = this.rng.choose([LockType.SIMPLE, LockType.COMPLEX, LockType.MAGICAL]);
+					let difficulty = 12; // Base DC
+
+					switch (lockType) {
+						case LockType.SIMPLE:
+							difficulty = 10 + this.rng.rollDie(6); // DC 11-16
+							break;
+						case LockType.COMPLEX:
+							difficulty = 15 + this.rng.rollDie(6); // DC 16-21
+							break;
+						case LockType.MAGICAL:
+							difficulty = 18 + this.rng.rollDie(8); // DC 19-26
+							break;
+					}
+
+					const lock: Lock = {
+						id: `lock-${room.id}-${direction}`,
+						type: lockType,
+						difficulty,
+						unlocked: false,
+						attempts: 0
+					};
+
+					// Some locks require keys
+					if (this.rng.chance(0.3)) {
+						lock.keyId = `key-${lock.id}`;
+						// TODO: Place key somewhere in dungeon
+					}
+
+					room.lockedExits.set(direction, lock);
+				}
+			}
+		}
+	}
+
+	private addTraps(rooms: Map<string, Room>, entranceRoomId: string): void {
+		for (const room of rooms.values()) {
+			// Skip entrance room
+			if (room.id === entranceRoomId) continue;
+
+			// 30% chance for trap
+			if (this.rng.chance(0.3)) {
+				const trapType = this.rng.choose([
+					TrapType.POISON_DART,
+					TrapType.PIT,
+					TrapType.SPIKE,
+					TrapType.FIRE,
+					TrapType.ALARM
+				]);
+
+				const trap = this.createTrap(room, trapType);
+				if (!room.traps) {
+					room.traps = [];
+				}
+				room.traps.push(trap);
+			}
+		}
+	}
+
+	private createTrap(room: Room, trapType: TrapType): Trap {
+		let name: string;
+		let description: string;
+		let damage: string | undefined;
+		let effect: TrapEffect | undefined;
+		let detectionDC: number;
+		let disarmDC: number;
+
+		switch (trapType) {
+			case TrapType.POISON_DART:
+				name = "Poison Dart Trap";
+				description = "Darts shoot from hidden holes in the walls!";
+				damage = "1d4+2";
+				effect = TrapEffect.POISON;
+				detectionDC = 15;
+				disarmDC = 13;
+				break;
+			case TrapType.PIT:
+				name = "Pit Trap";
+				description = "The floor gives way to a deep pit!";
+				damage = "2d6";
+				detectionDC = 12;
+				disarmDC = 15;
+				break;
+			case TrapType.SPIKE:
+				name = "Spike Trap";
+				description = "Sharp spikes spring from the ground!";
+				damage = "1d8+3";
+				detectionDC = 14;
+				disarmDC = 14;
+				break;
+			case TrapType.FIRE:
+				name = "Fire Trap";
+				description = "Flames burst from vents in the floor!";
+				damage = "2d4";
+				detectionDC = 16;
+				disarmDC = 16;
+				break;
+			case TrapType.ALARM:
+				name = "Alarm Trap";
+				description = "A magical alarm sounds throughout the dungeon!";
+				effect = TrapEffect.ALARM;
+				detectionDC = 18;
+				disarmDC = 12;
+				break;
+			default:
+				name = "Unknown Trap";
+				description = "Something dangerous activates!";
+				damage = "1d6";
+				detectionDC = 15;
+				disarmDC = 15;
+		}
+
+		return {
+			id: `trap-${room.id}-${trapType}`,
+			name,
+			description,
+			type: trapType,
+			detected: false,
+			disarmed: false,
+			triggered: false,
+			detectionDC,
+			disarmDC,
+			damage,
+			effect
+		};
+	}
+
+	private addPuzzles(rooms: Map<string, Room>, entranceRoomId: string): void {
+		// Add puzzles primarily to special room types
+		for (const room of rooms.values()) {
+			// Skip entrance room
+			if (room.id === entranceRoomId) continue;
+
+			let puzzleChance = 0.1; // Base 10% chance
+
+			// Higher chance for special rooms
+			switch (room.roomType) {
+				case RoomType.LIBRARY:
+					puzzleChance = 0.6;
+					break;
+				case RoomType.TREASURE_ROOM:
+					puzzleChance = 0.8;
+					break;
+				case RoomType.THRONE_ROOM:
+					puzzleChance = 0.5;
+					break;
+				case RoomType.CHAMBER:
+					puzzleChance = 0.3;
+					break;
+			}
+
+			if (this.rng.chance(puzzleChance)) {
+				const puzzle = this.interactionSystem.generateRandomPuzzle();
+
+				// Add reward for solving puzzle
+				if (room.roomType === RoomType.TREASURE_ROOM || room.roomType === RoomType.LIBRARY) {
+					const rewardItem = this.itemGenerator.generateRandomItem('uncommon' as any, 3);
+					puzzle.reward = [rewardItem];
+				}
+
+				if (!room.puzzles) {
+					room.puzzles = [];
+				}
+				room.puzzles.push(puzzle);
+			}
 		}
 	}
 }

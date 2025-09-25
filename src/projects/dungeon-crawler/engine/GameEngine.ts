@@ -2,16 +2,21 @@ import type { GameState, Message } from '../models/Room';
 import { MessageType } from '../models/Room';
 import type { Character, StatBlock } from '../models/Character';
 import { CharacterClass } from '../models/Character';
+import { CLASS_ABILITIES } from '../models/ClassAbilities';
 import { CombatActionType, CombatStatus, ParticipantType } from '../models/Combat';
 import { DungeonGenerator } from './DungeonGenerator';
 import { CommandProcessor } from './CommandProcessor';
 import { CombatSystem } from './CombatSystem';
+import { MagicSystem } from './MagicSystem';
+import { InteractionSystem } from './InteractionSystem';
 import { RandomGenerator } from '../utils/RandomGenerator';
 
 export class GameEngine {
 	private dungeonGenerator: DungeonGenerator;
 	private commandProcessor: CommandProcessor;
 	private combatSystem: CombatSystem;
+	private magicSystem: MagicSystem;
+	private interactionSystem: InteractionSystem;
 	private rng: RandomGenerator;
 
 	constructor() {
@@ -19,18 +24,27 @@ export class GameEngine {
 		this.dungeonGenerator = new DungeonGenerator(this.rng);
 		this.commandProcessor = new CommandProcessor();
 		this.combatSystem = new CombatSystem();
+		this.magicSystem = new MagicSystem();
+		this.interactionSystem = new InteractionSystem();
 	}
 
-	async startNewGame(): Promise<GameState> {
-		// Create a new character
-		const character = this.createDefaultCharacter();
+	getMagicSystem(): MagicSystem {
+		return this.magicSystem;
+	}
+
+	async startNewGame(character?: Character): Promise<GameState> {
+		// Use provided character or create default
+		const gameCharacter = character || this.createDefaultCharacter();
+
+		// Initialize class abilities
+		this.initializeCharacterAbilities(gameCharacter);
 
 		// Generate a new dungeon
 		const dungeon = this.dungeonGenerator.generateDungeon();
 
 		// Create initial game state
 		const gameState: GameState = {
-			character,
+			character: gameCharacter,
 			dungeon,
 			currentRoomId: dungeon.entranceRoomId,
 			messageLog: [],
@@ -38,7 +52,7 @@ export class GameEngine {
 		};
 
 		// Add welcome message and initial room description
-		this.addMessage(gameState, "Welcome to the Dungeon Crawler!", MessageType.SYSTEM);
+		this.addMessage(gameState, `Welcome to the Dungeon Crawler, ${gameCharacter.name}!`, MessageType.SYSTEM);
 		this.addMessage(gameState, "Type 'help' for available commands.", MessageType.SYSTEM);
 
 		// Describe the initial room
@@ -212,6 +226,77 @@ export class GameEngine {
 		this.processEnemyTurnsUntilPlayer(gameState);
 	}
 
+	private checkForTraps(gameState: GameState): void {
+		const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
+		if (!currentRoom || !currentRoom.traps) return;
+
+		const trapResults = this.interactionSystem.checkTrapTriggers(gameState.character, currentRoom);
+
+		for (const result of trapResults) {
+			this.addMessage(gameState, result.message, MessageType.ERROR);
+
+			if (result.damage) {
+				this.addMessage(gameState, `You take ${result.damage} damage!`, MessageType.ERROR);
+			}
+
+			if (result.effectApplied) {
+				this.addMessage(gameState, `You are ${result.effectApplied}!`, MessageType.ERROR);
+			}
+		}
+	}
+
+	async castSpell(
+		spellId: string,
+		gameState: GameState,
+		targetIds?: string[]
+	): Promise<GameState> {
+		const newState = { ...gameState };
+
+		try {
+			// Get spell targets (for now, just damage all enemies in combat)
+			let targets: (Character | any)[] = [];
+
+			if (newState.combatState) {
+				// In combat, target enemies
+				const activeEnemies = newState.combatState.participants
+					.filter(p => p.type === ParticipantType.ENEMY && p.isActive)
+					.map(p => p.enemy!)
+					.filter(Boolean);
+				targets = activeEnemies;
+			}
+
+			// Cast the spell
+			const result = this.magicSystem.castSpell(
+				newState.character,
+				spellId,
+				targets,
+				targetIds
+			);
+
+			if (result.success) {
+				this.addMessage(newState, result.message, MessageType.COMBAT);
+
+				// Apply damage to enemies if in combat
+				if (newState.combatState && result.damage && result.damage > 0) {
+					newState.combatState.participants.forEach(participant => {
+						if (participant.type === ParticipantType.ENEMY && participant.enemy) {
+							if (participant.enemy.hp.current <= 0) {
+								participant.isActive = false;
+							}
+						}
+					});
+				}
+			} else {
+				this.addMessage(newState, result.message, MessageType.ERROR);
+			}
+
+			return newState;
+		} catch (error) {
+			this.addMessage(newState, `Spell casting failed: ${error instanceof Error ? error.message : 'Unknown error'}`, MessageType.ERROR);
+			return newState;
+		}
+	}
+
 	private processEnemyTurnsUntilPlayer(gameState: GameState): void {
 		const combatState = gameState.combatState;
 		if (!combatState) return;
@@ -270,7 +355,8 @@ export class GameEngine {
 					this.addMessage(newState, result.message, result.messageType || MessageType.ACTION);
 				}
 
-				// Check for combat after successful actions
+				// Check for traps and combat after successful actions
+				this.checkForTraps(newState);
 				this.checkForCombat(newState);
 			} else {
 				this.addMessage(newState, result.message || "Command failed.", MessageType.ERROR);
@@ -304,8 +390,31 @@ export class GameEngine {
 			hp: { current: hp, max: hp },
 			equipment: {},
 			inventory: [],
-			experience: 0
+			experience: 0,
+			classAbilities: []
 		};
+	}
+
+	private initializeCharacterAbilities(character: Character): void {
+		// Get all abilities for the character's class and level
+		const availableAbilities = CLASS_ABILITIES[character.class] || [];
+		character.classAbilities = availableAbilities
+			.filter(ability => character.level >= ability.levelRequired)
+			.map(ability => ability.id);
+
+		// Initialize mana for spellcasters
+		if (character.class === CharacterClass.WIZARD || character.class === CharacterClass.CLERIC) {
+			const primaryStat = character.class === CharacterClass.WIZARD
+				? character.stats.intelligence
+				: character.stats.wisdom;
+			const statModifier = Math.floor((primaryStat - 10) / 2);
+			const maxMana = Math.max(1, 1 + statModifier + character.level);
+
+			character.mana = {
+				current: maxMana,
+				max: maxMana
+			};
+		}
 	}
 
 	private calculateHitPoints(constitution: number, level: number): number {
@@ -327,10 +436,33 @@ export class GameEngine {
 		// Basic room description
 		let description = this.getBasicRoomDescription(currentRoom);
 
-		// Add details about exits
+		// Add details about exits and locked doors
 		const exits = Array.from(currentRoom.exits.keys());
 		if (exits.length > 0) {
-			description += `\n\nExits: ${exits.join(', ')}`;
+			const exitInfo = exits.map(exit => {
+				const lock = currentRoom.lockedExits?.get(exit);
+				if (lock && !lock.unlocked) {
+					return `${exit} (locked)`;
+				}
+				return exit;
+			});
+			description += `\n\nExits: ${exitInfo.join(', ')}`;
+		}
+
+		// Add details about detected traps
+		if (currentRoom.traps && currentRoom.traps.some(t => t.detected && !t.disarmed)) {
+			const detectedTraps = currentRoom.traps
+				.filter(t => t.detected && !t.disarmed)
+				.map(t => t.name);
+			description += `\n\n⚠️ Traps: ${detectedTraps.join(', ')}`;
+		}
+
+		// Add details about puzzles
+		if (currentRoom.puzzles && currentRoom.puzzles.some(p => !p.solved)) {
+			const unsolvedPuzzles = currentRoom.puzzles
+				.filter(p => !p.solved)
+				.map(p => p.name);
+			description += `\n\n🧩 Puzzles: ${unsolvedPuzzles.join(', ')}`;
 		}
 
 		// Add details about items

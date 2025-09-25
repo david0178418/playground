@@ -1,5 +1,6 @@
-import { Paper, Typography, Box, Grid, LinearProgress } from '@mui/material';
+import { Paper, Typography, Box, Grid, LinearProgress, Chip, Stack } from '@mui/material';
 import type { Character } from '../models/Character';
+import { ClassAbilityManager } from '../models/ClassAbilities';
 
 interface CharacterSheetProps {
 	character: Character;
@@ -57,6 +58,26 @@ export function CharacterSheet({ character }: CharacterSheetProps) {
 						}
 					}}
 				/>
+
+				{/* Mana for spellcasters */}
+				{character.mana && (
+					<Box sx={{ mt: 2 }}>
+						<Typography variant="body2" gutterBottom>
+							Mana: {character.mana.current} / {character.mana.max}
+						</Typography>
+						<LinearProgress
+							variant="determinate"
+							value={(character.mana.current / character.mana.max) * 100}
+							sx={{
+								height: 6,
+								backgroundColor: 'grey.300',
+								'& .MuiLinearProgress-bar': {
+									backgroundColor: 'primary.main'
+								}
+							}}
+						/>
+					</Box>
+				)}
 			</Box>
 
 			<Typography variant="subtitle2" gutterBottom>
@@ -135,7 +156,7 @@ export function CharacterSheet({ character }: CharacterSheetProps) {
 					<Typography variant="subtitle2" gutterBottom>
 						Inventory ({character.inventory.length} items)
 					</Typography>
-					<Box sx={{ maxHeight: 100, overflow: 'auto' }}>
+					<Box sx={{ maxHeight: 100, overflow: 'auto', mb: 2 }}>
 						{character.inventory.slice(0, 5).map((item, index) => (
 							<Typography key={index} variant="caption" display="block">
 								• {item.name}
@@ -147,6 +168,27 @@ export function CharacterSheet({ character }: CharacterSheetProps) {
 							</Typography>
 						)}
 					</Box>
+				</>
+			)}
+
+			{/* Class Abilities */}
+			{character.classAbilities && character.classAbilities.length > 0 && (
+				<>
+					<Typography variant="subtitle2" gutterBottom>
+						Class Abilities
+					</Typography>
+					<Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
+						{ClassAbilityManager.getAbilitiesForCharacter(character).map((ability) => (
+							<Chip
+								key={ability.id}
+								label={ability.name}
+								size="small"
+								variant="outlined"
+								color="primary"
+								title={ability.description}
+							/>
+						))}
+					</Stack>
 				</>
 			)}
 		</Paper>

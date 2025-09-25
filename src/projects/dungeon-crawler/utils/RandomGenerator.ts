@@ -50,4 +50,12 @@ export class RandomGenerator {
 	chance(probability: number): boolean {
 		return this.next() < probability;
 	}
+
+	rollDie(sides: number): number {
+		return this.nextInt(1, sides);
+	}
+
+	random(): number {
+		return this.next();
+	}
 }
