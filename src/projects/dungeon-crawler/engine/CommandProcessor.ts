@@ -113,6 +113,18 @@ export class CommandProcessor {
 			case ActionType.REST:
 				return this.executeRest(gameState);
 
+			case ActionType.EQUIP:
+				return this.executeEquip(command.target!, gameState);
+
+			case ActionType.UNEQUIP:
+				return this.executeUnequip(command.target!, gameState);
+
+			case ActionType.USE:
+				return this.executeUse(command.target!, gameState);
+
+			case ActionType.DROP:
+				return this.executeDrop(command.target!, gameState);
+
 			default:
 				return {
 					success: false,
@@ -310,6 +322,151 @@ Examples:
 - inventory`;
 
 		return { success: true, message: helpText };
+	}
+
+	private executeEquip(targetName: string, gameState: GameState): CommandResult {
+		if (!targetName) {
+			return { success: false, message: "Equip what?" };
+		}
+
+		const character = gameState.character;
+		const item = character.inventory.find(
+			item => item.name.toLowerCase().includes(targetName.toLowerCase())
+		);
+
+		if (!item) {
+			return { success: false, message: `You don't have a ${targetName} in your inventory.` };
+		}
+
+		// Check if item can be equipped
+		switch (item.baseType) {
+			case 'weapon':
+				if (character.equipment.weapon) {
+					character.inventory.push(character.equipment.weapon);
+				}
+				character.equipment.weapon = item;
+				break;
+			case 'armor':
+				if (character.equipment.armor) {
+					character.inventory.push(character.equipment.armor);
+				}
+				character.equipment.armor = item;
+				break;
+			case 'shield':
+				if (character.equipment.shield) {
+					character.inventory.push(character.equipment.shield);
+				}
+				character.equipment.shield = item;
+				break;
+			default:
+				return { success: false, message: `You can't equip ${item.name}.` };
+		}
+
+		// Remove from inventory
+		character.inventory = character.inventory.filter(i => i !== item);
+
+		// Recalculate stats (simplified)
+		this.recalculateCharacterStats(character);
+
+		return { success: true, message: `You equip the ${item.name}.` };
+	}
+
+	private executeUnequip(targetName: string, gameState: GameState): CommandResult {
+		if (!targetName) {
+			return { success: false, message: "Unequip what?" };
+		}
+
+		const character = gameState.character;
+		const equipment = character.equipment;
+
+		let item;
+		if (equipment.weapon?.name.toLowerCase().includes(targetName.toLowerCase())) {
+			item = equipment.weapon;
+			equipment.weapon = undefined;
+		} else if (equipment.armor?.name.toLowerCase().includes(targetName.toLowerCase())) {
+			item = equipment.armor;
+			equipment.armor = undefined;
+		} else if (equipment.shield?.name.toLowerCase().includes(targetName.toLowerCase())) {
+			item = equipment.shield;
+			equipment.shield = undefined;
+		}
+
+		if (!item) {
+			return { success: false, message: `You don't have ${targetName} equipped.` };
+		}
+
+		character.inventory.push(item);
+		this.recalculateCharacterStats(character);
+
+		return { success: true, message: `You unequip the ${item.name}.` };
+	}
+
+	private executeUse(targetName: string, gameState: GameState): CommandResult {
+		if (!targetName) {
+			return { success: false, message: "Use what?" };
+		}
+
+		const character = gameState.character;
+		const item = character.inventory.find(
+			item => item.name.toLowerCase().includes(targetName.toLowerCase())
+		);
+
+		if (!item) {
+			return { success: false, message: `You don't have a ${targetName}.` };
+		}
+
+		// Handle consumable items
+		if (item.baseType === 'potion') {
+			const healingProperty = item.properties.find(p => p.type === 'healing');
+			if (healingProperty) {
+				const healing = healingProperty.value;
+				const oldHp = character.hp.current;
+				character.hp.current = Math.min(character.hp.max, character.hp.current + healing);
+				const actualHealing = character.hp.current - oldHp;
+
+				// Remove item from inventory
+				character.inventory = character.inventory.filter(i => i !== item);
+
+				return {
+					success: true,
+					message: `You drink the ${item.name} and recover ${actualHealing} hit points.`
+				};
+			}
+		}
+
+		return { success: false, message: `You can't use the ${item.name}.` };
+	}
+
+	private executeDrop(targetName: string, gameState: GameState): CommandResult {
+		if (!targetName) {
+			return { success: false, message: "Drop what?" };
+		}
+
+		const character = gameState.character;
+		const item = character.inventory.find(
+			item => item.name.toLowerCase().includes(targetName.toLowerCase())
+		);
+
+		if (!item) {
+			return { success: false, message: `You don't have a ${targetName}.` };
+		}
+
+		const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
+		if (!currentRoom) {
+			return { success: false, message: "You are in an unknown location." };
+		}
+
+		// Remove from inventory and add to room
+		character.inventory = character.inventory.filter(i => i !== item);
+		currentRoom.contents.items.push(item);
+
+		return { success: true, message: `You drop the ${item.name}.` };
+	}
+
+	private recalculateCharacterStats(_character: any): void {
+		// This is a simplified stat recalculation
+		// In a full implementation, this would handle all stat bonuses from equipment
+		// For now, we'll just ensure the character object is updated
 	}
 
 	private executeRest(gameState: GameState): CommandResult {

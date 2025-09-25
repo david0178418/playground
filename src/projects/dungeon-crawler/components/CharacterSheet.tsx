@@ -13,6 +13,28 @@ export function CharacterSheet({ character }: CharacterSheetProps) {
 
 	const hpPercentage = (character.hp.current / character.hp.max) * 100;
 
+	const calculateAC = (): number => {
+		let baseAC = 10 + Math.floor((character.stats.dexterity - 10) / 2);
+
+		// Add armor AC bonus
+		if (character.equipment.armor) {
+			const acBonus = character.equipment.armor.properties.find(p => p.type === 'ac_bonus');
+			if (acBonus) {
+				baseAC += acBonus.value;
+			}
+		}
+
+		// Add shield AC bonus
+		if (character.equipment.shield) {
+			const acBonus = character.equipment.shield.properties.find(p => p.type === 'ac_bonus');
+			if (acBonus) {
+				baseAC += acBonus.value;
+			}
+		}
+
+		return baseAC;
+	};
+
 	return (
 		<Paper sx={{ p: 2 }}>
 			<Typography variant="h6" gutterBottom>
@@ -85,20 +107,47 @@ export function CharacterSheet({ character }: CharacterSheetProps) {
 				</Grid>
 			</Grid>
 
-			<Typography variant="body2">
+			<Typography variant="body2" sx={{ mb: 1 }}>
 				Experience: {character.experience}
 			</Typography>
 
-			{character.equipment.weapon && (
-				<Typography variant="body2">
-					Weapon: {character.equipment.weapon.name}
-				</Typography>
-			)}
+			<Typography variant="body2" sx={{ mb: 2 }}>
+				Armor Class: {calculateAC()}
+			</Typography>
 
-			{character.equipment.armor && (
+			<Typography variant="subtitle2" gutterBottom>
+				Equipment
+			</Typography>
+			<Box sx={{ mb: 2 }}>
 				<Typography variant="body2">
-					Armor: {character.equipment.armor.name}
+					Weapon: {character.equipment.weapon?.name || 'None'}
 				</Typography>
+				<Typography variant="body2">
+					Armor: {character.equipment.armor?.name || 'None'}
+				</Typography>
+				<Typography variant="body2">
+					Shield: {character.equipment.shield?.name || 'None'}
+				</Typography>
+			</Box>
+
+			{character.inventory.length > 0 && (
+				<>
+					<Typography variant="subtitle2" gutterBottom>
+						Inventory ({character.inventory.length} items)
+					</Typography>
+					<Box sx={{ maxHeight: 100, overflow: 'auto' }}>
+						{character.inventory.slice(0, 5).map((item, index) => (
+							<Typography key={index} variant="caption" display="block">
+								• {item.name}
+							</Typography>
+						))}
+						{character.inventory.length > 5 && (
+							<Typography variant="caption" color="text.secondary">
+								...and {character.inventory.length - 5} more items
+							</Typography>
+						)}
+					</Box>
+				</>
 			)}
 		</Paper>
 	);

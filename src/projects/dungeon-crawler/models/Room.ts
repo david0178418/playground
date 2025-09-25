@@ -61,17 +61,12 @@ export interface GameState {
 	character: Character;
 	dungeon: Dungeon;
 	currentRoomId: string;
-	combatState?: CombatState;
+	combatState?: import('./Combat').CombatState;
 	messageLog: Message[];
 	turnCount: number;
 }
 
-export interface CombatState {
-	enemies: Enemy[];
-	turnOrder: (Character | Enemy)[];
-	currentTurnIndex: number;
-	playerDefending: boolean;
-}
+// Note: CombatState is now imported from Combat.ts to avoid circular dependencies
 
 export interface Message {
 	id: string;

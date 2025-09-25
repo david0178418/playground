@@ -1,0 +1,323 @@
+{
+  "weapons": {
+    "dagger": {
+      "name": "Dagger",
+      "baseType": "weapon",
+      "damage": "1d4",
+      "weight": 1,
+      "value": 2,
+      "rarity": "common",
+      "properties": [
+        { "type": "damage_bonus", "value": 4 }
+      ]
+    },
+    "shortsword": {
+      "name": "Shortsword",
+      "baseType": "weapon",
+      "damage": "1d6",
+      "weight": 2,
+      "value": 10,
+      "rarity": "common",
+      "properties": [
+        { "type": "damage_bonus", "value": 6 }
+      ]
+    },
+    "longsword": {
+      "name": "Longsword",
+      "baseType": "weapon",
+      "damage": "1d8",
+      "weight": 3,
+      "value": 15,
+      "rarity": "common",
+      "properties": [
+        { "type": "damage_bonus", "value": 8 }
+      ]
+    },
+    "scimitar": {
+      "name": "Scimitar",
+      "baseType": "weapon",
+      "damage": "1d6",
+      "weight": 3,
+      "value": 25,
+      "rarity": "common",
+      "properties": [
+        { "type": "damage_bonus", "value": 6 }
+      ]
+    },
+    "greataxe": {
+      "name": "Greataxe",
+      "baseType": "weapon",
+      "damage": "1d12",
+      "weight": 7,
+      "value": 30,
+      "rarity": "uncommon",
+      "properties": [
+        { "type": "damage_bonus", "value": 12 }
+      ]
+    },
+    "warhammer": {
+      "name": "Warhammer",
+      "baseType": "weapon",
+      "damage": "1d8",
+      "weight": 2,
+      "value": 15,
+      "rarity": "common",
+      "properties": [
+        { "type": "damage_bonus", "value": 8 }
+      ]
+    }
+  },
+  "armor": {
+    "leather_armor": {
+      "name": "Leather Armor",
+      "baseType": "armor",
+      "ac": 1,
+      "weight": 10,
+      "value": 10,
+      "rarity": "common",
+      "properties": [
+        { "type": "ac_bonus", "value": 1 }
+      ]
+    },
+    "studded_leather": {
+      "name": "Studded Leather Armor",
+      "baseType": "armor",
+      "ac": 2,
+      "weight": 13,
+      "value": 45,
+      "rarity": "common",
+      "properties": [
+        { "type": "ac_bonus", "value": 2 }
+      ]
+    },
+    "chain_mail": {
+      "name": "Chain Mail",
+      "baseType": "armor",
+      "ac": 4,
+      "weight": 55,
+      "value": 75,
+      "rarity": "uncommon",
+      "properties": [
+        { "type": "ac_bonus", "value": 4 }
+      ]
+    },
+    "plate_armor": {
+      "name": "Plate Armor",
+      "baseType": "armor",
+      "ac": 6,
+      "weight": 65,
+      "value": 1500,
+      "rarity": "rare",
+      "properties": [
+        { "type": "ac_bonus", "value": 6 }
+      ]
+    }
+  },
+  "shields": {
+    "buckler": {
+      "name": "Buckler",
+      "baseType": "shield",
+      "ac": 1,
+      "weight": 5,
+      "value": 5,
+      "rarity": "common",
+      "properties": [
+        { "type": "ac_bonus", "value": 1 }
+      ]
+    },
+    "shield": {
+      "name": "Shield",
+      "baseType": "shield",
+      "ac": 2,
+      "weight": 6,
+      "value": 10,
+      "rarity": "common",
+      "properties": [
+        { "type": "ac_bonus", "value": 2 }
+      ]
+    }
+  },
+  "consumables": {
+    "health_potion": {
+      "name": "Health Potion",
+      "baseType": "potion",
+      "weight": 0.5,
+      "value": 50,
+      "rarity": "common",
+      "properties": [
+        { "type": "healing", "value": 8 }
+      ],
+      "consumable": true,
+      "useDescription": "You feel your wounds closing as you drink the potion."
+    },
+    "greater_health_potion": {
+      "name": "Greater Health Potion",
+      "baseType": "potion",
+      "weight": 0.5,
+      "value": 150,
+      "rarity": "uncommon",
+      "properties": [
+        { "type": "healing", "value": 20 }
+      ],
+      "consumable": true,
+      "useDescription": "A surge of vitality flows through your body."
+    },
+    "strength_potion": {
+      "name": "Potion of Strength",
+      "baseType": "potion",
+      "weight": 0.5,
+      "value": 100,
+      "rarity": "uncommon",
+      "properties": [
+        { "type": "stat_bonus", "value": 2, "stat": "strength" }
+      ],
+      "consumable": true,
+      "duration": 10,
+      "useDescription": "You feel your muscles bulge with newfound power."
+    }
+  },
+  "treasures": {
+    "gold_coin": {
+      "name": "Gold Coin",
+      "baseType": "treasure",
+      "weight": 0.02,
+      "value": 1,
+      "rarity": "common",
+      "properties": [],
+      "stackable": true
+    },
+    "gem": {
+      "name": "Precious Gem",
+      "baseType": "treasure",
+      "weight": 0.1,
+      "value": 100,
+      "rarity": "rare",
+      "properties": []
+    },
+    "art_object": {
+      "name": "Ancient Artifact",
+      "baseType": "treasure",
+      "weight": 2,
+      "value": 250,
+      "rarity": "rare",
+      "properties": []
+    }
+  },
+  "magic_prefixes": [
+    {
+      "name": "Sharp",
+      "rarity": "uncommon",
+      "applicableTo": ["weapon"],
+      "properties": [
+        { "type": "damage_bonus", "value": 1 }
+      ],
+      "valueMultiplier": 1.5
+    },
+    {
+      "name": "Keen",
+      "rarity": "rare",
+      "applicableTo": ["weapon"],
+      "properties": [
+        { "type": "damage_bonus", "value": 2 }
+      ],
+      "valueMultiplier": 2.0
+    },
+    {
+      "name": "Reinforced",
+      "rarity": "uncommon",
+      "applicableTo": ["armor", "shield"],
+      "properties": [
+        { "type": "ac_bonus", "value": 1 }
+      ],
+      "valueMultiplier": 1.5
+    },
+    {
+      "name": "Fortified",
+      "rarity": "rare",
+      "applicableTo": ["armor", "shield"],
+      "properties": [
+        { "type": "ac_bonus", "value": 2 }
+      ],
+      "valueMultiplier": 2.0
+    },
+    {
+      "name": "Giant's",
+      "rarity": "rare",
+      "applicableTo": ["weapon", "armor"],
+      "properties": [
+        { "type": "stat_bonus", "value": 1, "stat": "strength" }
+      ],
+      "valueMultiplier": 2.5
+    },
+    {
+      "name": "Swift",
+      "rarity": "rare",
+      "applicableTo": ["weapon", "armor"],
+      "properties": [
+        { "type": "stat_bonus", "value": 1, "stat": "dexterity" }
+      ],
+      "valueMultiplier": 2.5
+    }
+  ],
+  "magic_suffixes": [
+    {
+      "name": "of Power",
+      "rarity": "uncommon",
+      "applicableTo": ["weapon"],
+      "properties": [
+        { "type": "damage_bonus", "value": 1 }
+      ],
+      "valueMultiplier": 1.3
+    },
+    {
+      "name": "of Protection",
+      "rarity": "uncommon",
+      "applicableTo": ["armor", "shield"],
+      "properties": [
+        { "type": "ac_bonus", "value": 1 }
+      ],
+      "valueMultiplier": 1.3
+    },
+    {
+      "name": "of the Bear",
+      "rarity": "rare",
+      "applicableTo": ["armor"],
+      "properties": [
+        { "type": "stat_bonus", "value": 2, "stat": "constitution" }
+      ],
+      "valueMultiplier": 2.0
+    },
+    {
+      "name": "of the Eagle",
+      "rarity": "rare",
+      "applicableTo": ["weapon"],
+      "properties": [
+        { "type": "stat_bonus", "value": 2, "stat": "dexterity" }
+      ],
+      "valueMultiplier": 2.0
+    }
+  ],
+  "loot_tables": {
+    "common": {
+      "weapons": 0.3,
+      "armor": 0.2,
+      "shields": 0.1,
+      "consumables": 0.3,
+      "treasures": 0.1
+    },
+    "uncommon": {
+      "weapons": 0.4,
+      "armor": 0.3,
+      "shields": 0.1,
+      "consumables": 0.1,
+      "treasures": 0.1
+    },
+    "rare": {
+      "weapons": 0.5,
+      "armor": 0.3,
+      "shields": 0.1,
+      "consumables": 0.05,
+      "treasures": 0.05
+    }
+  }
+}

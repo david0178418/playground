@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Box, Paper } from '@mui/material';
-import type { DungeonMap, Room, Corridor, MergedCorridor, ConnectionPoint, ExteriorDoor } from '../types';
+import type { DungeonMap, Room, MergedCorridor, ConnectionPoint, ExteriorDoor } from '../types';
 import { getRoomTemplateById } from '../data/roomTemplates';
 import { isConnectionPointConnected } from '../utils/connectionHelpers';
 import {

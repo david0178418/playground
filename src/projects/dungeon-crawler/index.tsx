@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { GameUI } from './components/GameUI';
 import { GameEngine } from './engine/GameEngine';
 import type { GameState } from './models/Room';
+import { CombatActionType } from './models/Combat';
 
 export default function DungeonCrawler() {
 	const [gameEngine] = useState(() => new GameEngine());
@@ -35,6 +36,17 @@ export default function DungeonCrawler() {
 		}
 	};
 
+	const handleCombatAction = async (action: CombatActionType, targetId?: string) => {
+		if (!gameState) return;
+
+		try {
+			const newState = await gameEngine.processCombatAction(action, gameState, targetId);
+			setGameState(newState);
+		} catch (error) {
+			console.error('Failed to process combat action:', error);
+		}
+	};
+
 	if (isLoading) {
 		return <div>Loading game...</div>;
 	}
@@ -43,5 +55,11 @@ export default function DungeonCrawler() {
 		return <div>Failed to load game</div>;
 	}
 
-	return <GameUI gameState={gameState} onCommand={handleCommand} />;
+	return (
+		<GameUI
+			gameState={gameState}
+			onCommand={handleCommand}
+			onCombatAction={handleCombatAction}
+		/>
+	);
 }

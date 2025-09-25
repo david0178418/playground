@@ -1,19 +1,33 @@
 import { Container, Grid, Paper, Typography, Box } from '@mui/material';
 import type { GameState } from '../models/Room';
+import { CombatActionType } from '../models/Combat';
 import { MessageLog } from './MessageLog';
 import { CommandInput } from './CommandInput';
 import { CharacterSheet } from './CharacterSheet';
+import { CombatUI } from './CombatUI';
 
 interface GameUIProps {
 	gameState: GameState;
 	onCommand: (command: string) => void;
+	onCombatAction?: (action: CombatActionType, targetId?: string) => void;
 }
 
-export function GameUI({ gameState, onCommand }: GameUIProps) {
+export function GameUI({ gameState, onCommand, onCombatAction }: GameUIProps) {
 	const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
 
 	return (
 		<Container maxWidth="lg" sx={{ py: 2 }}>
+			{/* Combat Interface */}
+			{gameState.combatState && onCombatAction && (
+				<Box sx={{ mb: 3 }}>
+					<CombatUI
+						combatState={gameState.combatState}
+						onCombatAction={onCombatAction}
+						disabled={false}
+					/>
+				</Box>
+			)}
+
 			<Grid container spacing={3}>
 				{/* Main game area */}
 				<Grid size={{ xs: 12, md: 8 }}>
@@ -69,7 +83,7 @@ export function GameUI({ gameState, onCommand }: GameUIProps) {
 								Combat!
 							</Typography>
 							<Typography variant="body2" color="error.contrastText">
-								Enemies: {gameState.combatState.enemies.map(e => `${e.name} (${e.hp.current}/${e.hp.max} HP)`).join(', ')}
+								Round: {gameState.combatState.round}
 							</Typography>
 						</Paper>
 					)}

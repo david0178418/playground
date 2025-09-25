@@ -1,0 +1,282 @@
+{
+  "templates": {
+    "goblin": {
+      "name": "Goblin",
+      "baseStats": {
+        "strength": 8,
+        "dexterity": 14,
+        "constitution": 10,
+        "intelligence": 8,
+        "wisdom": 8,
+        "charisma": 8
+      },
+      "baseHp": 7,
+      "baseAc": 15,
+      "attacks": [
+        {
+          "name": "Scimitar",
+          "damageRoll": "1d6+2",
+          "hitBonus": 4,
+          "description": "slashes with a rusty scimitar at"
+        },
+        {
+          "name": "Shortbow",
+          "damageRoll": "1d6+2",
+          "hitBonus": 4,
+          "description": "shoots an arrow at"
+        }
+      ],
+      "loot": {
+        "gold": { "min": 1, "max": 4 },
+        "items": [
+          { "template": "rusty_scimitar", "chance": 0.3 },
+          { "template": "leather_armor", "chance": 0.2 }
+        ]
+      },
+      "minLevel": 1,
+      "maxLevel": 3
+    },
+    "orc": {
+      "name": "Orc",
+      "baseStats": {
+        "strength": 16,
+        "dexterity": 12,
+        "constitution": 16,
+        "intelligence": 7,
+        "wisdom": 11,
+        "charisma": 10
+      },
+      "baseHp": 15,
+      "baseAc": 13,
+      "attacks": [
+        {
+          "name": "Greataxe",
+          "damageRoll": "1d12+3",
+          "hitBonus": 5,
+          "description": "swings a massive greataxe at"
+        },
+        {
+          "name": "Javelin",
+          "damageRoll": "1d6+3",
+          "hitBonus": 5,
+          "description": "hurls a javelin at"
+        }
+      ],
+      "loot": {
+        "gold": { "min": 3, "max": 8 },
+        "items": [
+          { "template": "greataxe", "chance": 0.4 },
+          { "template": "studded_leather", "chance": 0.3 }
+        ]
+      },
+      "minLevel": 2,
+      "maxLevel": 5
+    },
+    "skeleton": {
+      "name": "Skeleton",
+      "baseStats": {
+        "strength": 10,
+        "dexterity": 14,
+        "constitution": 15,
+        "intelligence": 6,
+        "wisdom": 8,
+        "charisma": 5
+      },
+      "baseHp": 13,
+      "baseAc": 13,
+      "attacks": [
+        {
+          "name": "Shortsword",
+          "damageRoll": "1d6+2",
+          "hitBonus": 4,
+          "description": "strikes with a bone shortsword at"
+        },
+        {
+          "name": "Shortbow",
+          "damageRoll": "1d6+2",
+          "hitBonus": 4,
+          "description": "fires a bone arrow at"
+        }
+      ],
+      "loot": {
+        "gold": { "min": 0, "max": 2 },
+        "items": [
+          { "template": "bone_dust", "chance": 0.5 },
+          { "template": "shortsword", "chance": 0.2 }
+        ]
+      },
+      "minLevel": 1,
+      "maxLevel": 4,
+      "immunities": ["poison"],
+      "resistances": ["necrotic"]
+    },
+    "rat": {
+      "name": "Giant Rat",
+      "baseStats": {
+        "strength": 7,
+        "dexterity": 15,
+        "constitution": 11,
+        "intelligence": 2,
+        "wisdom": 10,
+        "charisma": 4
+      },
+      "baseHp": 7,
+      "baseAc": 12,
+      "attacks": [
+        {
+          "name": "Bite",
+          "damageRoll": "1d4+2",
+          "hitBonus": 4,
+          "description": "bites"
+        }
+      ],
+      "loot": {
+        "gold": { "min": 0, "max": 1 },
+        "items": [
+          { "template": "rat_tail", "chance": 0.3 }
+        ]
+      },
+      "minLevel": 1,
+      "maxLevel": 2,
+      "pack": true,
+      "packSize": { "min": 2, "max": 4 }
+    },
+    "spider": {
+      "name": "Giant Spider",
+      "baseStats": {
+        "strength": 14,
+        "dexterity": 16,
+        "constitution": 12,
+        "intelligence": 2,
+        "wisdom": 11,
+        "charisma": 4
+      },
+      "baseHp": 26,
+      "baseAc": 14,
+      "attacks": [
+        {
+          "name": "Bite",
+          "damageRoll": "1d8+2",
+          "hitBonus": 5,
+          "description": "bites with venomous fangs"
+        },
+        {
+          "name": "Web",
+          "damageRoll": "0",
+          "hitBonus": 5,
+          "description": "shoots webbing at",
+          "effect": "restrained"
+        }
+      ],
+      "loot": {
+        "gold": { "min": 2, "max": 5 },
+        "items": [
+          { "template": "spider_silk", "chance": 0.6 },
+          { "template": "poison_gland", "chance": 0.4 }
+        ]
+      },
+      "minLevel": 2,
+      "maxLevel": 4
+    },
+    "bandit": {
+      "name": "Bandit",
+      "baseStats": {
+        "strength": 11,
+        "dexterity": 12,
+        "constitution": 12,
+        "intelligence": 10,
+        "wisdom": 10,
+        "charisma": 10
+      },
+      "baseHp": 11,
+      "baseAc": 12,
+      "attacks": [
+        {
+          "name": "Scimitar",
+          "damageRoll": "1d6+1",
+          "hitBonus": 3,
+          "description": "attacks with a scimitar"
+        },
+        {
+          "name": "Light Crossbow",
+          "damageRoll": "1d8+1",
+          "hitBonus": 3,
+          "description": "fires a crossbow bolt at"
+        }
+      ],
+      "loot": {
+        "gold": { "min": 5, "max": 15 },
+        "items": [
+          { "template": "scimitar", "chance": 0.5 },
+          { "template": "leather_armor", "chance": 0.4 },
+          { "template": "health_potion", "chance": 0.3 }
+        ]
+      },
+      "minLevel": 1,
+      "maxLevel": 3
+    },
+    "dragon_wyrmling": {
+      "name": "Red Dragon Wyrmling",
+      "baseStats": {
+        "strength": 19,
+        "dexterity": 10,
+        "constitution": 17,
+        "intelligence": 12,
+        "wisdom": 11,
+        "charisma": 15
+      },
+      "baseHp": 75,
+      "baseAc": 17,
+      "attacks": [
+        {
+          "name": "Bite",
+          "damageRoll": "1d10+4",
+          "hitBonus": 7,
+          "description": "bites with massive jaws"
+        },
+        {
+          "name": "Fire Breath",
+          "damageRoll": "7d6",
+          "hitBonus": 0,
+          "description": "breathes fire on",
+          "areaEffect": true,
+          "recharge": 5
+        }
+      ],
+      "loot": {
+        "gold": { "min": 50, "max": 200 },
+        "items": [
+          { "template": "dragon_scale", "chance": 0.8 },
+          { "template": "magic_sword", "chance": 0.3 },
+          { "template": "treasure_hoard", "chance": 1.0 }
+        ]
+      },
+      "minLevel": 5,
+      "maxLevel": 10,
+      "boss": true,
+      "legendary": true
+    }
+  },
+  "encounterTables": {
+    "level1": {
+      "common": ["rat", "goblin"],
+      "uncommon": ["skeleton"],
+      "rare": ["spider"]
+    },
+    "level2": {
+      "common": ["goblin", "skeleton"],
+      "uncommon": ["orc", "bandit"],
+      "rare": ["spider"]
+    },
+    "level3": {
+      "common": ["orc", "bandit"],
+      "uncommon": ["skeleton", "spider"],
+      "rare": ["dragon_wyrmling"]
+    },
+    "boss": {
+      "common": ["dragon_wyrmling"],
+      "uncommon": [],
+      "rare": []
+    }
+  }
+}

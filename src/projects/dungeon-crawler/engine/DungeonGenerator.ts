@@ -1,12 +1,18 @@
 import type { Room, Dungeon } from '../models/Room';
 import { Direction, RoomType } from '../models/Room';
 import { RandomGenerator } from '../utils/RandomGenerator';
+import { EnemyGenerator } from './EnemyGenerator';
+import { ItemGenerator } from './ItemGenerator';
 
 export class DungeonGenerator {
 	private rng: RandomGenerator;
+	private enemyGenerator: EnemyGenerator;
+	private itemGenerator: ItemGenerator;
 
 	constructor(rng: RandomGenerator) {
 		this.rng = rng;
+		this.enemyGenerator = new EnemyGenerator(rng);
+		this.itemGenerator = new ItemGenerator(rng);
 	}
 
 	generateDungeon(size: number = 15): Dungeon {
@@ -202,15 +208,100 @@ export class DungeonGenerator {
 	}
 
 	private distributeContent(rooms: Map<string, Room>, entranceRoomId: string): void {
-		// For now, keep content distribution simple
-		// This will be expanded when we add items and enemies
-		for (const room of rooms.values()) {
-			if (room.id === entranceRoomId) continue;
+		const entranceRoom = rooms.get(entranceRoomId);
+		if (!entranceRoom) return;
 
-			// Add simple content based on room type and distance from entrance
-			if (room.roomType === RoomType.TREASURE_ROOM) {
-				// Treasure rooms get items (to be implemented)
+		for (const room of rooms.values()) {
+			if (room.id === entranceRoomId) continue; // Skip entrance room
+
+			const roomDepth = this.calculateRoomDepth(room, entranceRoom);
+
+			// Distribute enemies
+			if (this.enemyGenerator.shouldHaveEncounter(roomDepth, room.roomType)) {
+				const isBossRoom = room.roomType === RoomType.TREASURE_ROOM;
+				const enemies = this.enemyGenerator.generateEncounter(roomDepth, isBossRoom);
+				room.contents.enemies = enemies;
 			}
+
+			// Distribute items based on room type
+			this.distributeRoomItems(room, roomDepth);
+		}
+	}
+
+	private calculateRoomDepth(room: Room, entranceRoom: Room): number {
+		// Manhattan distance from entrance
+		return Math.abs(room.coordinates.x - entranceRoom.coordinates.x) +
+			   Math.abs(room.coordinates.y - entranceRoom.coordinates.y);
+	}
+
+	private distributeRoomItems(room: Room, roomDepth: number): void {
+		switch (room.roomType) {
+			case RoomType.TREASURE_ROOM:
+				// Treasure rooms always have valuable items
+				const treasureItems = this.itemGenerator.generateTreasureHoard(roomDepth);
+				room.contents.items = treasureItems;
+				break;
+
+			case RoomType.ARMORY:
+				// Armories have weapons and armor
+				if (this.rng.chance(0.8)) {
+					const weapon = this.itemGenerator.generateSpecificItem(
+						this.rng.choose(['shortsword', 'longsword', 'greataxe', 'warhammer']),
+						'weapons'
+					);
+					if (weapon) room.contents.items.push(weapon);
+				}
+				if (this.rng.chance(0.6)) {
+					const armor = this.itemGenerator.generateSpecificItem(
+						this.rng.choose(['leather_armor', 'studded_leather', 'chain_mail']),
+						'armor'
+					);
+					if (armor) room.contents.items.push(armor);
+				}
+				break;
+
+			case RoomType.LIBRARY:
+				// Libraries might have scrolls or potions
+				if (this.rng.chance(0.5)) {
+					const potion = this.itemGenerator.generateSpecificItem(
+						this.rng.choose(['health_potion', 'strength_potion']),
+						'consumables'
+					);
+					if (potion) room.contents.items.push(potion);
+				}
+				break;
+
+			case RoomType.CHAMBER:
+			case RoomType.GENERIC:
+				// Regular rooms have a chance for random loot
+				if (this.rng.chance(0.3)) {
+					const randomItem = this.itemGenerator.generateRandomItem(
+						this.rng.choose(['common', 'uncommon'] as any),
+						roomDepth
+					);
+					room.contents.items.push(randomItem);
+				}
+				break;
+
+			default:
+				// Small chance for items in other room types
+				if (this.rng.chance(0.15)) {
+					const randomItem = this.itemGenerator.generateRandomItem('common' as any, roomDepth);
+					room.contents.items.push(randomItem);
+				}
+				break;
+		}
+
+		// Add hidden items that can be found by searching
+		if (this.rng.chance(0.2)) {
+			room.contents.features.push({
+				id: `hidden-${room.id}`,
+				name: 'Hidden Compartment',
+				description: 'A small hidden compartment in the wall.',
+				searchable: true,
+				searched: false,
+				hidden_items: [this.itemGenerator.generateRandomItem('common' as any, roomDepth)]
+			});
 		}
 	}
 }
