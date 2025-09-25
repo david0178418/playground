@@ -1,6 +1,10 @@
 import { useState } from 'react';
-import { Container, Grid, Paper, Typography, Box, Button, Dialog } from '@mui/material';
-import { AutoAwesome as MagicIcon } from '@mui/icons-material';
+import { Container, Grid, Paper, Typography, Box, Button, Dialog, Snackbar, Alert } from '@mui/material';
+import {
+	AutoAwesome as MagicIcon,
+	Save as SaveIcon,
+	Restore as LoadIcon
+} from '@mui/icons-material';
 import type { GameState } from '../models/Room';
 import { CombatActionType } from '../models/Combat';
 import { MessageLog } from './MessageLog';
@@ -8,6 +12,7 @@ import { CommandInput } from './CommandInput';
 import { CharacterSheet } from './CharacterSheet';
 import { CombatUI } from './CombatUI';
 import { SpellBook } from './SpellBook';
+import { SaveLoadUI } from './SaveLoadUI';
 
 import { GameEngine } from '../engine/GameEngine';
 
@@ -17,10 +22,14 @@ interface GameUIProps {
 	onCommand: (command: string) => void;
 	onCombatAction?: (action: CombatActionType, targetId?: string) => void;
 	onCastSpell?: (spellId: string, targetIds?: string[]) => void;
+	onGameStateChange?: (newGameState: GameState) => void;
 }
 
-export function GameUI({ gameState, gameEngine, onCommand, onCombatAction, onCastSpell }: GameUIProps) {
+export function GameUI({ gameState, gameEngine, onCommand, onCombatAction, onCastSpell, onGameStateChange }: GameUIProps) {
 	const [showSpellBook, setShowSpellBook] = useState(false);
+	const [showSaveDialog, setShowSaveDialog] = useState(false);
+	const [showLoadDialog, setShowLoadDialog] = useState(false);
+	const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 	const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
 
 	return (
@@ -68,6 +77,36 @@ export function GameUI({ gameState, gameEngine, onCommand, onCombatAction, onCas
 						</Box>
 					)}
 
+					{/* Save/Load Buttons */}
+					{gameEngine && (
+						<Box sx={{ mb: 2 }}>
+							<Grid container spacing={1}>
+								<Grid size={{ xs: 6 }}>
+									<Button
+										fullWidth
+										variant="outlined"
+										startIcon={<SaveIcon />}
+										onClick={() => setShowSaveDialog(true)}
+										disabled={!!gameState.combatState}
+									>
+										Save
+									</Button>
+								</Grid>
+								<Grid size={{ xs: 6 }}>
+									<Button
+										fullWidth
+										variant="outlined"
+										startIcon={<LoadIcon />}
+										onClick={() => setShowLoadDialog(true)}
+										disabled={!!gameState.combatState}
+									>
+										Load
+									</Button>
+								</Grid>
+							</Grid>
+						</Box>
+					)}
+
 					{/* Current room info */}
 					<Paper sx={{ p: 2 }}>
 						<Typography variant="h6" gutterBottom>
@@ -82,7 +121,7 @@ export function GameUI({ gameState, gameEngine, onCommand, onCombatAction, onCas
 									Coordinates: ({currentRoom.coordinates.x}, {currentRoom.coordinates.y})
 								</Typography>
 								<Typography variant="body2">
-									Exits: {Array.from(currentRoom.exits.keys()).join(', ') || 'None'}
+									Exits: {currentRoom.exits && currentRoom.exits.keys ? Array.from(currentRoom.exits.keys()).join(', ') || 'None' : 'None'}
 								</Typography>
 								{currentRoom.contents.enemies.length > 0 && (
 									<Typography variant="body2" color="error.main">
@@ -133,6 +172,58 @@ export function GameUI({ gameState, gameEngine, onCommand, onCombatAction, onCas
 						/>
 					)}
 				</Dialog>
+			)}
+
+			{/* Save Dialog */}
+			{gameEngine && (
+				<SaveLoadUI
+					open={showSaveDialog}
+					onClose={() => setShowSaveDialog(false)}
+					gameEngine={gameEngine}
+					currentGameState={gameState}
+					mode="save"
+					onSaveComplete={(success, message) => {
+						setNotification({ message, type: success ? 'success' : 'error' });
+						if (success) {
+							setShowSaveDialog(false);
+						}
+					}}
+				/>
+			)}
+
+			{/* Load Dialog */}
+			{gameEngine && (
+				<SaveLoadUI
+					open={showLoadDialog}
+					onClose={() => setShowLoadDialog(false)}
+					gameEngine={gameEngine}
+					mode="load"
+					onLoadComplete={(newGameState, message) => {
+						setNotification({ message, type: newGameState ? 'success' : 'error' });
+						if (newGameState && onGameStateChange) {
+							onGameStateChange(newGameState);
+							setShowLoadDialog(false);
+						}
+					}}
+				/>
+			)}
+
+			{/* Notification Snackbar */}
+			{notification && (
+				<Snackbar
+					open={true}
+					autoHideDuration={4000}
+					onClose={() => setNotification(null)}
+					anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+				>
+					<Alert
+						onClose={() => setNotification(null)}
+						severity={notification.type}
+						variant="filled"
+					>
+						{notification.message}
+					</Alert>
+				</Snackbar>
 			)}
 		</Container>
 	);

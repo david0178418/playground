@@ -119,8 +119,11 @@ function createMergedCorridor(corridors: Corridor[], groupIndex: number): Merged
 		get boundingBox() {
 			if (mergedPath.length === 0) return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
 
-			let minX = mergedPath[0].x, maxX = mergedPath[0].x;
-			let minY = mergedPath[0].y, maxY = mergedPath[0].y;
+			const firstPos = mergedPath[0];
+			if (!firstPos) return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
+
+			let minX = firstPos.x, maxX = firstPos.x;
+			let minY = firstPos.y, maxY = firstPos.y;
 
 			for (const pos of mergedPath) {
 				minX = Math.min(minX, pos.x);

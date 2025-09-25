@@ -10,7 +10,9 @@ import { CombatSystem } from './CombatSystem';
 import { MagicSystem } from './MagicSystem';
 import { InteractionSystem } from './InteractionSystem';
 import { EnvironmentalSystem } from './EnvironmentalSystem';
+import { SaveSystem } from './SaveSystem';
 import { RandomGenerator } from '../utils/RandomGenerator';
+import type { SaveOperation, LoadOperation, SaveSlot } from '../models/SaveData';
 
 export class GameEngine {
 	private dungeonGenerator: DungeonGenerator;
@@ -19,7 +21,9 @@ export class GameEngine {
 	private magicSystem: MagicSystem;
 	private interactionSystem: InteractionSystem;
 	private environmentalSystem: EnvironmentalSystem;
+	private saveSystem: SaveSystem;
 	private rng: RandomGenerator;
+	private lastAutoSaveTurn: number = 0;
 
 	constructor() {
 		this.rng = new RandomGenerator();
@@ -29,10 +33,69 @@ export class GameEngine {
 		this.magicSystem = new MagicSystem();
 		this.interactionSystem = new InteractionSystem();
 		this.environmentalSystem = new EnvironmentalSystem();
+		this.saveSystem = new SaveSystem();
 	}
 
 	getMagicSystem(): MagicSystem {
 		return this.magicSystem;
+	}
+
+	// Save/Load System Methods
+	async saveGame(gameState: GameState, saveSlot: number, customName?: string): Promise<SaveOperation> {
+		const result = await this.saveSystem.saveGame(gameState, saveSlot, customName);
+
+		// If save was successful, also trigger auto-save (unless this was auto-save)
+		if (result.result === 'success' && saveSlot !== 0) {
+			await this.saveSystem.autoSave(gameState);
+		}
+
+		return result;
+	}
+
+	async loadGame(saveSlot: number): Promise<LoadOperation> {
+		return await this.saveSystem.loadGame(saveSlot);
+	}
+
+	async autoSave(gameState: GameState): Promise<SaveOperation> {
+		return await this.saveSystem.autoSave(gameState);
+	}
+
+	getSaveSlots(): SaveSlot[] {
+		return this.saveSystem.getSaveSlots();
+	}
+
+	deleteSave(saveSlot: number): boolean {
+		return this.saveSystem.deleteSave(saveSlot);
+	}
+
+	hasAutoSave(): boolean {
+		return this.saveSystem.hasAutoSave();
+	}
+
+	clearAllSaves(): boolean {
+		return this.saveSystem.clearAllSaves();
+	}
+
+	getMostRecentSave(): { slotId: number; saveData: any } | null {
+		return this.saveSystem.getMostRecentSave();
+	}
+
+	async loadMostRecentSave(): Promise<LoadOperation> {
+		return await this.saveSystem.loadMostRecentSave();
+	}
+
+	// Auto-save at key moments in the game
+	private async triggerAutoSave(gameState: GameState, reason: string): Promise<void> {
+		try {
+			const result = await this.autoSave(gameState);
+			if (result.result === 'success') {
+				console.log(`Auto-save successful: ${reason}`);
+			} else {
+				console.warn(`Auto-save failed: ${result.message}`);
+			}
+		} catch (error) {
+			console.warn(`Auto-save error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+		}
 	}
 
 	async startNewGame(character?: Character): Promise<GameState> {
@@ -179,6 +242,11 @@ export class GameEngine {
 			currentRoom.contents.enemies = [];
 		}
 
+		// Auto-save after combat resolution (when combat state is properly cleared)
+		if (status === CombatStatus.VICTORY) {
+			this.triggerAutoSave(newState, 'combat victory');
+		}
+
 		return newState;
 	}
 
@@ -196,7 +264,12 @@ export class GameEngine {
 			gameState.character.hp.max += hpIncrease;
 			gameState.character.hp.current += hpIncrease;
 			this.addMessage(gameState, `🎊 Level up! You are now level ${newLevel}! (+${hpIncrease} HP)`, MessageType.SYSTEM);
+
+			// Auto-save after level up
+			this.triggerAutoSave(gameState, `level up to ${newLevel}`);
 		}
+
+		// Note: Auto-save will happen in handleCombatEnd after combat state is cleared
 	}
 
 	private handleCombatDefeat(gameState: GameState): void {
@@ -361,6 +434,18 @@ export class GameEngine {
 				// Check for traps and combat after successful actions
 				this.checkForTraps(newState);
 				this.checkForCombat(newState);
+
+				// Periodic auto-save (every 10 turns)
+				const AUTOSAVE_INTERVAL = 10;
+				if (newState.turnCount - this.lastAutoSaveTurn >= AUTOSAVE_INTERVAL) {
+					this.lastAutoSaveTurn = newState.turnCount;
+					this.triggerAutoSave(newState, `periodic save after ${newState.turnCount} turns`);
+				}
+
+				// Auto-save on room movement
+				if (result.message && (result.message.includes('You enter') || result.message.includes('You go'))) {
+					this.triggerAutoSave(newState, 'room movement');
+				}
 			} else {
 				this.addMessage(newState, result.message || "Command failed.", MessageType.ERROR);
 			}

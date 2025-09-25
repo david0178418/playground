@@ -169,7 +169,7 @@ export function RoomDetails(props: Props) {
 									primary={`Corridor ${corridor.id.split('-')[1]?.slice(0, 8) || 'Unknown'}`}
 									secondary={
 										<Chip
-											label={formatRoomShape(corridor.type)}
+											label={`${corridor.segmentCount} segments`}
 											size="small"
 											color="info"
 											variant="outlined"

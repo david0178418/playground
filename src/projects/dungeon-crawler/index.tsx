@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GameUI } from './components/GameUI';
 import { CharacterCreation } from './components/CharacterCreation';
 import { GameEngine } from './engine/GameEngine';
@@ -11,6 +11,43 @@ export default function DungeonCrawler() {
 	const [gameState, setGameState] = useState<GameState | null>(null);
 	const [showCharacterCreation, setShowCharacterCreation] = useState(true);
 	const [isLoading, setIsLoading] = useState(false);
+	const [hasCheckedForSaves, setHasCheckedForSaves] = useState(false);
+
+	// Check for existing saves on component mount
+	useEffect(() => {
+		const checkForExistingSaves = async () => {
+			try {
+				setIsLoading(true);
+				const mostRecentSave = gameEngine.getMostRecentSave();
+
+				if (mostRecentSave) {
+					// Auto-load the most recent save
+					const loadResult = await gameEngine.loadMostRecentSave();
+					if (loadResult.result === 'success' && loadResult.gameState) {
+						setGameState(loadResult.gameState);
+						setShowCharacterCreation(false);
+					} else {
+						// If loading failed, show character creation
+						console.warn('Failed to load most recent save:', loadResult.message);
+						setShowCharacterCreation(true);
+					}
+				} else {
+					// No saves found, show character creation
+					setShowCharacterCreation(true);
+				}
+			} catch (error) {
+				console.error('Error checking for existing saves:', error);
+				setShowCharacterCreation(true);
+			} finally {
+				setIsLoading(false);
+				setHasCheckedForSaves(true);
+			}
+		};
+
+		if (!hasCheckedForSaves) {
+			checkForExistingSaves();
+		}
+	}, [gameEngine, hasCheckedForSaves]);
 
 	const handleCharacterCreated = async (character: Character) => {
 		setIsLoading(true);
@@ -59,12 +96,13 @@ export default function DungeonCrawler() {
 		}
 	};
 
-	if (showCharacterCreation) {
-		return <CharacterCreation onCharacterCreated={handleCharacterCreated} />;
+	// Show loading while checking for saves or loading game
+	if (!hasCheckedForSaves || isLoading) {
+		return <div>Loading game...</div>;
 	}
 
-	if (isLoading) {
-		return <div>Loading game...</div>;
+	if (showCharacterCreation) {
+		return <CharacterCreation onCharacterCreated={handleCharacterCreated} />;
 	}
 
 	if (!gameState) {
@@ -78,6 +116,7 @@ export default function DungeonCrawler() {
 			onCommand={handleCommand}
 			onCombatAction={handleCombatAction}
 			onCastSpell={handleCastSpell}
+			onGameStateChange={setGameState}
 		/>
 	);
 }

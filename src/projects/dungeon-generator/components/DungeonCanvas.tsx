@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Box, Paper } from '@mui/material';
-import type { DungeonMap, Room, MergedCorridor, ConnectionPoint, ExteriorDoor } from '../types';
+import type { DungeonMap, Room, MergedCorridor, ConnectionPoint, ExteriorDoor, Position } from '../types';
 import { getRoomTemplateById } from '../data/roomTemplates';
 import { isConnectionPointConnected } from '../utils/connectionHelpers';
 import {
@@ -184,12 +184,12 @@ export function DungeonCanvas(props: Props) {
 				edgeName: 'bottom'
 			},
 			{
-				condition: col === 0 || !gridPattern[row][col - 1],
+				condition: col === 0 || !gridPattern[row]?.[col - 1],
 				coords: [squareX, squareY, squareX, squareY + gridSquareSize],
 				edgeName: 'left'
 			},
 			{
-				condition: col === gridPattern[row].length - 1 || !gridPattern[row][col + 1],
+				condition: col === (gridPattern[row]?.length ?? 0) - 1 || !gridPattern[row]?.[col + 1],
 				coords: [squareX + gridSquareSize, squareY, squareX + gridSquareSize, squareY + gridSquareSize],
 				edgeName: 'right'
 			}
