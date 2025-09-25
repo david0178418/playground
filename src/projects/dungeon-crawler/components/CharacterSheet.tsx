@@ -1,6 +1,7 @@
 import { Paper, Typography, Box, Grid, LinearProgress, Chip, Stack } from '@mui/material';
 import type { Character } from '../models/Character';
 import { ClassAbilityManager } from '../models/ClassAbilities';
+import { EnhancedTooltip, gameTooltips } from './EnhancedTooltip';
 
 interface CharacterSheetProps {
 	character: Character;
@@ -43,9 +44,13 @@ export function CharacterSheet({ character }: CharacterSheetProps) {
 			</Typography>
 
 			<Box sx={{ mb: 2 }}>
-				<Typography variant="body2" gutterBottom>
-					HP: {character.hp.current} / {character.hp.max}
-				</Typography>
+				<EnhancedTooltip
+					{...gameTooltips.stats.hp}
+				>
+					<Typography variant="body2" gutterBottom sx={{ cursor: 'help' }}>
+						HP: {character.hp.current} / {character.hp.max}
+					</Typography>
+				</EnhancedTooltip>
 				<LinearProgress
 					variant="determinate"
 					value={hpPercentage}
@@ -62,9 +67,13 @@ export function CharacterSheet({ character }: CharacterSheetProps) {
 				{/* Mana for spellcasters */}
 				{character.mana && (
 					<Box sx={{ mt: 2 }}>
-						<Typography variant="body2" gutterBottom>
-							Mana: {character.mana.current} / {character.mana.max}
-						</Typography>
+						<EnhancedTooltip
+							{...gameTooltips.stats.mana}
+						>
+							<Typography variant="body2" gutterBottom sx={{ cursor: 'help' }}>
+								Mana: {character.mana.current} / {character.mana.max}
+							</Typography>
+						</EnhancedTooltip>
 						<LinearProgress
 							variant="determinate"
 							value={(character.mana.current / character.mana.max) * 100}
@@ -85,46 +94,58 @@ export function CharacterSheet({ character }: CharacterSheetProps) {
 			</Typography>
 			<Grid container spacing={2} sx={{ mb: 2 }}>
 				<Grid size={4}>
-					<Box sx={{ textAlign: 'center' }}>
-						<Typography variant="body2">STR</Typography>
-						<Typography variant="h6">{character.stats.strength}</Typography>
-						<Typography variant="caption">{getStatModifier(character.stats.strength)}</Typography>
-					</Box>
+					<EnhancedTooltip {...gameTooltips.stats.strength}>
+						<Box sx={{ textAlign: 'center', cursor: 'help' }}>
+							<Typography variant="body2">STR</Typography>
+							<Typography variant="h6">{character.stats.strength}</Typography>
+							<Typography variant="caption">{getStatModifier(character.stats.strength)}</Typography>
+						</Box>
+					</EnhancedTooltip>
 				</Grid>
 				<Grid size={4}>
-					<Box sx={{ textAlign: 'center' }}>
-						<Typography variant="body2">DEX</Typography>
-						<Typography variant="h6">{character.stats.dexterity}</Typography>
-						<Typography variant="caption">{getStatModifier(character.stats.dexterity)}</Typography>
-					</Box>
+					<EnhancedTooltip {...gameTooltips.stats.dexterity}>
+						<Box sx={{ textAlign: 'center', cursor: 'help' }}>
+							<Typography variant="body2">DEX</Typography>
+							<Typography variant="h6">{character.stats.dexterity}</Typography>
+							<Typography variant="caption">{getStatModifier(character.stats.dexterity)}</Typography>
+						</Box>
+					</EnhancedTooltip>
 				</Grid>
 				<Grid size={4}>
-					<Box sx={{ textAlign: 'center' }}>
-						<Typography variant="body2">CON</Typography>
-						<Typography variant="h6">{character.stats.constitution}</Typography>
-						<Typography variant="caption">{getStatModifier(character.stats.constitution)}</Typography>
-					</Box>
+					<EnhancedTooltip {...gameTooltips.stats.constitution}>
+						<Box sx={{ textAlign: 'center', cursor: 'help' }}>
+							<Typography variant="body2">CON</Typography>
+							<Typography variant="h6">{character.stats.constitution}</Typography>
+							<Typography variant="caption">{getStatModifier(character.stats.constitution)}</Typography>
+						</Box>
+					</EnhancedTooltip>
 				</Grid>
 				<Grid size={4}>
-					<Box sx={{ textAlign: 'center' }}>
-						<Typography variant="body2">INT</Typography>
-						<Typography variant="h6">{character.stats.intelligence}</Typography>
-						<Typography variant="caption">{getStatModifier(character.stats.intelligence)}</Typography>
-					</Box>
+					<EnhancedTooltip {...gameTooltips.stats.intelligence}>
+						<Box sx={{ textAlign: 'center', cursor: 'help' }}>
+							<Typography variant="body2">INT</Typography>
+							<Typography variant="h6">{character.stats.intelligence}</Typography>
+							<Typography variant="caption">{getStatModifier(character.stats.intelligence)}</Typography>
+						</Box>
+					</EnhancedTooltip>
 				</Grid>
 				<Grid size={4}>
-					<Box sx={{ textAlign: 'center' }}>
-						<Typography variant="body2">WIS</Typography>
-						<Typography variant="h6">{character.stats.wisdom}</Typography>
-						<Typography variant="caption">{getStatModifier(character.stats.wisdom)}</Typography>
-					</Box>
+					<EnhancedTooltip {...gameTooltips.stats.wisdom}>
+						<Box sx={{ textAlign: 'center', cursor: 'help' }}>
+							<Typography variant="body2">WIS</Typography>
+							<Typography variant="h6">{character.stats.wisdom}</Typography>
+							<Typography variant="caption">{getStatModifier(character.stats.wisdom)}</Typography>
+						</Box>
+					</EnhancedTooltip>
 				</Grid>
 				<Grid size={4}>
-					<Box sx={{ textAlign: 'center' }}>
-						<Typography variant="body2">CHA</Typography>
-						<Typography variant="h6">{character.stats.charisma}</Typography>
-						<Typography variant="caption">{getStatModifier(character.stats.charisma)}</Typography>
-					</Box>
+					<EnhancedTooltip {...gameTooltips.stats.charisma}>
+						<Box sx={{ textAlign: 'center', cursor: 'help' }}>
+							<Typography variant="body2">CHA</Typography>
+							<Typography variant="h6">{character.stats.charisma}</Typography>
+							<Typography variant="caption">{getStatModifier(character.stats.charisma)}</Typography>
+						</Box>
+					</EnhancedTooltip>
 				</Grid>
 			</Grid>
 

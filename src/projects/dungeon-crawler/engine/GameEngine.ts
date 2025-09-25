@@ -245,6 +245,8 @@ export class GameEngine {
 		// Auto-save after combat resolution (when combat state is properly cleared)
 		if (status === CombatStatus.VICTORY) {
 			this.triggerAutoSave(newState, 'combat victory');
+		} else if (status === CombatStatus.DEFEAT) {
+			this.triggerAutoSave(newState, 'combat defeat - player respawned');
 		}
 
 		return newState;

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Paper, Box, Typography } from '@mui/material';
 import type { Message } from '../models/Room';
 import { MessageType } from '../models/Room';
@@ -8,7 +9,16 @@ interface MessageLogProps {
 }
 
 export function MessageLog({ messages, maxMessages = 50 }: MessageLogProps) {
+	const messagesContainerRef = useRef<HTMLDivElement>(null);
 	const recentMessages = messages.slice(-maxMessages);
+
+	// Auto-scroll to bottom when new messages arrive
+	useEffect(() => {
+		if (messagesContainerRef.current) {
+			const container = messagesContainerRef.current;
+			container.scrollTop = container.scrollHeight;
+		}
+	}, [messages.length, messages[messages.length - 1]?.id]);
 
 	const getMessageColor = (type: MessageType) => {
 		switch (type) {
@@ -28,7 +38,10 @@ export function MessageLog({ messages, maxMessages = 50 }: MessageLogProps) {
 	};
 
 	return (
-		<Paper sx={{ p: 2, height: '400px', overflow: 'auto' }}>
+		<Paper
+			ref={messagesContainerRef}
+			sx={{ p: 2, height: '400px', overflow: 'auto' }}
+		>
 			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
 				{recentMessages.map((message) => (
 					<Typography

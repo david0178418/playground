@@ -264,7 +264,7 @@ export class SaveSystem {
 
 	private serializeDungeon(dungeon: Dungeon): SerializableDungeon {
 		// Serialize rooms with proper Map handling
-		const serializedRooms = Array.from(dungeon.rooms.entries()).map(([roomId, room]) => [
+		const serializedRooms: [string, any][] = Array.from(dungeon.rooms.entries()).map(([roomId, room]) => [
 			roomId,
 			this.serializeRoom(room)
 		]);

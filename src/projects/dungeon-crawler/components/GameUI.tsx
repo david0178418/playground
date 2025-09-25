@@ -3,7 +3,8 @@ import { Container, Grid, Paper, Typography, Box, Button, Dialog, Snackbar, Aler
 import {
 	AutoAwesome as MagicIcon,
 	Save as SaveIcon,
-	Restore as LoadIcon
+	Restore as LoadIcon,
+	Help as HelpIcon
 } from '@mui/icons-material';
 import type { GameState } from '../models/Room';
 import { CombatActionType } from '../models/Combat';
@@ -13,6 +14,11 @@ import { CharacterSheet } from './CharacterSheet';
 import { CombatUI } from './CombatUI';
 import { SpellBook } from './SpellBook';
 import { SaveLoadUI } from './SaveLoadUI';
+import { Minimap } from './Minimap';
+import { EnhancedTooltip, gameTooltips } from './EnhancedTooltip';
+import { KeyboardHandler, createGameShortcuts } from './KeyboardHandler';
+import { KeyboardShortcutsDialog } from './KeyboardShortcutsDialog';
+import { QuickActions } from './QuickActions';
 
 import { GameEngine } from '../engine/GameEngine';
 
@@ -29,8 +35,25 @@ export function GameUI({ gameState, gameEngine, onCommand, onCombatAction, onCas
 	const [showSpellBook, setShowSpellBook] = useState(false);
 	const [showSaveDialog, setShowSaveDialog] = useState(false);
 	const [showLoadDialog, setShowLoadDialog] = useState(false);
+	const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
 	const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 	const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
+
+	// Create keyboard shortcuts
+	const shortcuts = createGameShortcuts({
+		onCommand,
+		onShowSpellBook: gameState.character.mana && onCastSpell ? () => setShowSpellBook(true) : undefined,
+		onShowSave: gameEngine ? () => setShowSaveDialog(true) : undefined,
+		onShowLoad: gameEngine ? () => setShowLoadDialog(true) : undefined,
+		onCombatAction: gameState.combatState && onCombatAction ? onCombatAction : undefined
+	});
+
+	// Add help shortcut
+	shortcuts.push({
+		key: '?',
+		action: () => setShowShortcutsHelp(true),
+		description: 'Show keyboard shortcuts help'
+	});
 
 	return (
 		<Container maxWidth="lg" sx={{ py: 2 }}>
@@ -63,49 +86,96 @@ export function GameUI({ gameState, gameEngine, onCommand, onCombatAction, onCas
 						<CharacterSheet character={gameState.character} />
 					</Box>
 
+					{/* Quick Actions */}
+					<Box sx={{ mb: 3 }}>
+						<QuickActions
+							gameState={gameState}
+							onCommand={onCommand}
+							onCombatAction={onCombatAction}
+							onShowSpellBook={gameState.character.mana && onCastSpell ? () => setShowSpellBook(true) : undefined}
+						/>
+					</Box>
+
 					{/* Spell Book Button */}
 					{gameState.character.mana && onCastSpell && (
 						<Box sx={{ mb: 2 }}>
-							<Button
-								fullWidth
-								variant="outlined"
-								startIcon={<MagicIcon />}
-								onClick={() => setShowSpellBook(true)}
-							>
-								Spell Book
-							</Button>
+							<EnhancedTooltip {...gameTooltips.commands.cast}>
+								<Button
+									fullWidth
+									variant="outlined"
+									startIcon={<MagicIcon />}
+									onClick={() => setShowSpellBook(true)}
+								>
+									Spell Book
+								</Button>
+							</EnhancedTooltip>
 						</Box>
 					)}
 
-					{/* Save/Load Buttons */}
-					{gameEngine && (
-						<Box sx={{ mb: 2 }}>
-							<Grid container spacing={1}>
-								<Grid size={{ xs: 6 }}>
+					{/* Save/Load/Help Buttons */}
+					<Box sx={{ mb: 2 }}>
+						<Grid container spacing={1}>
+							{gameEngine && (
+								<>
+									<Grid size={{ xs: 4 }}>
+										<EnhancedTooltip {...gameTooltips.commands.save}>
+											<span>
+												<Button
+													fullWidth
+													variant="outlined"
+													startIcon={<SaveIcon />}
+													onClick={() => setShowSaveDialog(true)}
+													disabled={!!gameState.combatState}
+													size="small"
+												>
+													Save
+												</Button>
+											</span>
+										</EnhancedTooltip>
+									</Grid>
+									<Grid size={{ xs: 4 }}>
+										<EnhancedTooltip {...gameTooltips.commands.load}>
+											<span>
+												<Button
+													fullWidth
+													variant="outlined"
+													startIcon={<LoadIcon />}
+													onClick={() => setShowLoadDialog(true)}
+													disabled={!!gameState.combatState}
+													size="small"
+												>
+													Load
+												</Button>
+											</span>
+										</EnhancedTooltip>
+									</Grid>
+								</>
+							)}
+							<Grid size={{ xs: gameEngine ? 4 : 12 }}>
+								<EnhancedTooltip
+									title="Keyboard Shortcuts"
+									description="View available keyboard shortcuts for faster gameplay"
+									shortcut="?"
+									type="help"
+								>
 									<Button
 										fullWidth
 										variant="outlined"
-										startIcon={<SaveIcon />}
-										onClick={() => setShowSaveDialog(true)}
-										disabled={!!gameState.combatState}
+										startIcon={<HelpIcon />}
+										onClick={() => setShowShortcutsHelp(true)}
+										size="small"
 									>
-										Save
+										Help
 									</Button>
-								</Grid>
-								<Grid size={{ xs: 6 }}>
-									<Button
-										fullWidth
-										variant="outlined"
-										startIcon={<LoadIcon />}
-										onClick={() => setShowLoadDialog(true)}
-										disabled={!!gameState.combatState}
-									>
-										Load
-									</Button>
-								</Grid>
+								</EnhancedTooltip>
 							</Grid>
-						</Box>
-					)}
+						</Grid>
+					</Box>
+
+					{/* Minimap */}
+					<Box sx={{ mb: 2 }}>
+						<Minimap gameState={gameState} />
+					</Box>
 
 					{/* Current room info */}
 					<Paper sx={{ p: 2 }}>
@@ -120,18 +190,31 @@ export function GameUI({ gameState, gameEngine, onCommand, onCombatAction, onCas
 								<Typography variant="body2" gutterBottom>
 									Coordinates: ({currentRoom.coordinates.x}, {currentRoom.coordinates.y})
 								</Typography>
-								<Typography variant="body2">
-									Exits: {currentRoom.exits && currentRoom.exits.keys ? Array.from(currentRoom.exits.keys()).join(', ') || 'None' : 'None'}
-								</Typography>
-								{currentRoom.contents.enemies.length > 0 && (
-									<Typography variant="body2" color="error.main">
-										Enemies: {currentRoom.contents.enemies.map(e => e.name).join(', ')}
+								<EnhancedTooltip {...gameTooltips.room.exits}>
+									<Typography variant="body2" sx={{ cursor: 'help' }}>
+										Exits: {currentRoom.exits && currentRoom.exits.keys ? Array.from(currentRoom.exits.keys()).join(', ') || 'None' : 'None'}
 									</Typography>
+								</EnhancedTooltip>
+								{currentRoom.contents.enemies.length > 0 && (
+									<EnhancedTooltip {...gameTooltips.room.enemies}>
+										<Typography variant="body2" color="error.main" sx={{ cursor: 'help' }}>
+											Enemies: {currentRoom.contents.enemies.map(e => e.name).join(', ')}
+										</Typography>
+									</EnhancedTooltip>
 								)}
 								{currentRoom.contents.items.length > 0 && (
-									<Typography variant="body2" color="success.main">
-										Items: {currentRoom.contents.items.map(i => i.name).join(', ')}
-									</Typography>
+									<EnhancedTooltip {...gameTooltips.room.items}>
+										<Typography variant="body2" color="success.main" sx={{ cursor: 'help' }}>
+											Items: {currentRoom.contents.items.map(i => i.name).join(', ')}
+										</Typography>
+									</EnhancedTooltip>
+								)}
+								{currentRoom.hazards && currentRoom.hazards.length > 0 && (
+									<EnhancedTooltip {...gameTooltips.room.hazards}>
+										<Typography variant="body2" color="warning.main" sx={{ cursor: 'help' }}>
+											Hazards: {currentRoom.hazards.map((h: any) => h.name).join(', ')}
+										</Typography>
+									</EnhancedTooltip>
 								)}
 							</Box>
 						)}
@@ -225,6 +308,19 @@ export function GameUI({ gameState, gameEngine, onCommand, onCombatAction, onCas
 					</Alert>
 				</Snackbar>
 			)}
+
+			{/* Keyboard Handler */}
+			<KeyboardHandler
+				shortcuts={shortcuts}
+				disabled={showSpellBook || showSaveDialog || showLoadDialog || showShortcutsHelp}
+			/>
+
+			{/* Keyboard Shortcuts Help Dialog */}
+			<KeyboardShortcutsDialog
+				open={showShortcutsHelp}
+				onClose={() => setShowShortcutsHelp(false)}
+				shortcuts={shortcuts}
+			/>
 		</Container>
 	);
 }
