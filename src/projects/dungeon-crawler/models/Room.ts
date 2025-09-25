@@ -12,6 +12,8 @@ export interface Room {
 	visited: boolean;
 	traps?: Trap[];
 	puzzles?: Puzzle[];
+	hazards?: EnvironmentalHazard[];
+	interactiveElements?: InteractiveElement[];
 }
 
 export interface RoomContents {
@@ -101,6 +103,132 @@ export enum TrapEffect {
 	PARALYSIS = "paralysis",
 	ALARM = "alarm",
 	TELEPORT = "teleport"
+}
+
+export interface EnvironmentalHazard {
+	id: string;
+	name: string;
+	description: string;
+	type: HazardType;
+	severity: HazardSeverity;
+	isPermanent: boolean;
+	duration?: number; // rounds remaining for temporary hazards
+	damagePerTurn?: string; // dice notation
+	effectType?: EnvironmentalEffect;
+	resistanceType?: string; // what can protect against it
+	triggeredByMovement?: boolean;
+	affectsSpellcasting?: boolean;
+}
+
+export interface InteractiveElement {
+	id: string;
+	name: string;
+	description: string;
+	type: InteractiveType;
+	activated: boolean;
+	usesRemaining?: number; // some elements can only be used X times
+	requiresItem?: string; // ID of required item
+	skillRequired?: string; // skill check needed
+	difficultyClass?: number;
+	cooldownTurns?: number; // how many turns before it can be used again
+	lastUsedTurn?: number;
+	effect: InteractiveEffect;
+}
+
+export interface InteractiveEffect {
+	type: EffectTargetType;
+	description: string;
+	doorId?: string; // for door controls
+	roomModification?: RoomModification;
+	characterEffect?: CharacterStatusEffect;
+	spawnItems?: Item[];
+	teleportDestination?: string; // room ID
+	healAmount?: string; // dice notation
+	damageAmount?: string; // dice notation
+}
+
+export interface RoomModification {
+	type: ModificationType;
+	targetId?: string;
+	newState?: boolean;
+	duration?: number;
+}
+
+export interface CharacterStatusEffect {
+	type: StatusEffectType;
+	duration: number; // in rounds
+	modifier?: number;
+	description: string;
+}
+
+export enum HazardType {
+	POISON_GAS = "poison_gas",
+	UNSTABLE_FLOOR = "unstable_floor",
+	EXTREME_COLD = "extreme_cold",
+	EXTREME_HEAT = "extreme_heat",
+	MAGICAL_DARKNESS = "magical_darkness",
+	ARCANE_STORM = "arcane_storm",
+	FLOODING = "flooding",
+	THICK_FOG = "thick_fog",
+	RADIATION = "radiation"
+}
+
+export enum HazardSeverity {
+	MINOR = "minor",
+	MODERATE = "moderate",
+	SEVERE = "severe",
+	EXTREME = "extreme"
+}
+
+export enum EnvironmentalEffect {
+	CONTINUOUS_DAMAGE = "continuous_damage",
+	REDUCED_VISIBILITY = "reduced_visibility",
+	SPELL_DISRUPTION = "spell_disruption",
+	MOVEMENT_PENALTY = "movement_penalty",
+	EQUIPMENT_DAMAGE = "equipment_damage",
+	EXHAUSTION = "exhaustion",
+	SUFFOCATION = "suffocation"
+}
+
+export enum InteractiveType {
+	LEVER = "lever",
+	SWITCH = "switch",
+	PRESSURE_PLATE = "pressure_plate",
+	ALTAR = "altar",
+	FOUNTAIN = "fountain",
+	MIRROR = "mirror",
+	BOOKSHELF = "bookshelf",
+	STATUE = "statue",
+	CRYSTAL = "crystal",
+	TELEPORTER = "teleporter",
+	GATE_CONTROL = "gate_control",
+	MOVING_PLATFORM = "moving_platform"
+}
+
+export enum EffectTargetType {
+	CHARACTER = "character",
+	ROOM = "room",
+	DOOR = "door",
+	SPAWN_ITEMS = "spawn_items",
+	TELEPORT = "teleport",
+	ENVIRONMENTAL = "environmental"
+}
+
+export enum ModificationType {
+	TOGGLE_HAZARD = "toggle_hazard",
+	CHANGE_LIGHTING = "change_lighting",
+	OPEN_SECRET_PASSAGE = "open_secret_passage",
+	ROTATE_ROOM = "rotate_room"
+}
+
+export enum StatusEffectType {
+	BLESSED = "blessed",
+	CURSED = "cursed",
+	ENERGIZED = "energized",
+	EXHAUSTED = "exhausted",
+	BLINDED = "blinded",
+	SLOWED = "slowed",
+	PROTECTED = "protected"
 }
 
 export enum Direction {

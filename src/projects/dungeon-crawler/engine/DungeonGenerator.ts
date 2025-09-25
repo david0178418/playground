@@ -4,18 +4,21 @@ import { RandomGenerator } from '../utils/RandomGenerator';
 import { EnemyGenerator } from './EnemyGenerator';
 import { ItemGenerator } from './ItemGenerator';
 import { InteractionSystem } from './InteractionSystem';
+import { EnvironmentalSystem } from './EnvironmentalSystem';
 
 export class DungeonGenerator {
 	private rng: RandomGenerator;
 	private enemyGenerator: EnemyGenerator;
 	private itemGenerator: ItemGenerator;
 	private interactionSystem: InteractionSystem;
+	private environmentalSystem: EnvironmentalSystem;
 
 	constructor(rng: RandomGenerator) {
 		this.rng = rng;
 		this.enemyGenerator = new EnemyGenerator(rng);
 		this.itemGenerator = new ItemGenerator(rng);
 		this.interactionSystem = new InteractionSystem();
+		this.environmentalSystem = new EnvironmentalSystem();
 	}
 
 	generateDungeon(size: number = 15): Dungeon {
@@ -43,6 +46,9 @@ export class DungeonGenerator {
 
 		// Add advanced room features
 		this.addAdvancedFeatures(rooms, entranceRoom.id);
+
+		// Add environmental hazards and interactive elements
+		this.addEnvironmentalFeatures(rooms, entranceRoom.id);
 
 		return {
 			id: `dungeon-${Date.now()}`,
@@ -498,6 +504,50 @@ export class DungeonGenerator {
 					room.puzzles = [];
 				}
 				room.puzzles.push(puzzle);
+			}
+		}
+	}
+
+	private addEnvironmentalFeatures(rooms: Map<string, Room>, entranceRoomId: string): void {
+		for (const room of rooms.values()) {
+			// Skip entrance room for hazards
+			if (room.id === entranceRoomId) continue;
+
+			const roomDepth = this.calculateRoomDepth(room, rooms.get(entranceRoomId)!);
+
+			// Add environmental hazards (25% chance, higher in deeper rooms)
+			const hazardChance = Math.min(0.4, 0.15 + (roomDepth * 0.05));
+			if (this.rng.chance(hazardChance)) {
+				const hazard = this.environmentalSystem.generateHazard(room.roomType, roomDepth, this.rng);
+				if (hazard) {
+					if (!room.hazards) room.hazards = [];
+					room.hazards.push(hazard);
+				}
+			}
+
+			// Add interactive elements (30% chance, higher for special rooms)
+			let interactiveChance = 0.2;
+			switch (room.roomType) {
+				case RoomType.LIBRARY:
+					interactiveChance = 0.7;
+					break;
+				case RoomType.THRONE_ROOM:
+					interactiveChance = 0.8;
+					break;
+				case RoomType.TREASURE_ROOM:
+					interactiveChance = 0.6;
+					break;
+				case RoomType.CHAMBER:
+					interactiveChance = 0.4;
+					break;
+			}
+
+			if (this.rng.chance(interactiveChance)) {
+				const element = this.environmentalSystem.generateInteractiveElement(room.roomType, roomDepth, this.rng);
+				if (element) {
+					if (!room.interactiveElements) room.interactiveElements = [];
+					room.interactiveElements.push(element);
+				}
 			}
 		}
 	}

@@ -3,6 +3,7 @@ import { ActionType, Direction } from '../models/Command';
 import type { GameState } from '../models/Room';
 import { MessageType } from '../models/Room';
 import { InteractionSystem } from './InteractionSystem';
+import { EnvironmentalSystem } from './EnvironmentalSystem';
 
 export interface CommandResult {
 	success: boolean;
@@ -12,9 +13,11 @@ export interface CommandResult {
 
 export class CommandProcessor {
 	private interactionSystem: InteractionSystem;
+	private environmentalSystem: EnvironmentalSystem;
 
 	constructor() {
 		this.interactionSystem = new InteractionSystem();
+		this.environmentalSystem = new EnvironmentalSystem();
 	}
 	parseCommand(input: string): Command {
 		const words = input.toLowerCase().trim().split(/\s+/);
@@ -104,6 +107,25 @@ export class CommandProcessor {
 			case 'answer':
 				return { action: ActionType.SOLVE_PUZZLE, answer: target };
 
+			case 'activate':
+			case 'use':
+				if (words.includes('lever') || words.includes('switch') || words.includes('altar') || words.includes('fountain')) {
+					return { action: ActionType.ACTIVATE, target };
+				}
+				return { action: ActionType.USE, target };
+
+			case 'pull':
+				return { action: ActionType.PULL, target };
+
+			case 'push':
+				return { action: ActionType.PUSH, target };
+
+			case 'touch':
+				return { action: ActionType.TOUCH, target };
+
+			case 'wait':
+				return { action: ActionType.WAIT };
+
 			case 'rest':
 			case 'sleep':
 				return { action: ActionType.REST };
@@ -169,6 +191,21 @@ export class CommandProcessor {
 
 			case ActionType.SOLVE_PUZZLE:
 				return this.executeSolvePuzzle(command.answer, gameState);
+
+			case ActionType.ACTIVATE:
+				return this.executeActivate(command.target, gameState);
+
+			case ActionType.PULL:
+				return this.executePull(command.target, gameState);
+
+			case ActionType.PUSH:
+				return this.executePush(command.target, gameState);
+
+			case ActionType.TOUCH:
+				return this.executeTouch(command.target, gameState);
+
+			case ActionType.WAIT:
+				return this.executeWait(gameState);
 
 			default:
 				return {
@@ -359,6 +396,7 @@ Items: get <item>, drop <item>, inventory (i), equip <item>, use <item>
 Combat: attack <enemy>, defend, flee
 Magic: cast <spell>
 Interaction: pick lock <direction>, detect traps, disarm <trap>, solve <answer>
+Environment: activate <element>, pull <lever>, push <button>, touch <object>, wait
 Other: rest, help
 
 Examples:
@@ -371,6 +409,11 @@ Examples:
 - detect traps
 - disarm poison dart
 - solve echo
+- activate lever
+- pull lever
+- push button
+- touch altar
+- wait
 - inventory`;
 
 		return { success: true, message: helpText };
@@ -682,24 +725,183 @@ Examples:
 		return undefined;
 	}
 
+	private executeActivate(targetName: string | undefined, gameState: GameState): CommandResult {
+		const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
+		if (!currentRoom || !currentRoom.interactiveElements || currentRoom.interactiveElements.length === 0) {
+			return { success: false, message: "There's nothing here to activate." };
+		}
+
+		if (!targetName) {
+			const availableElements = currentRoom.interactiveElements.map(e => e.name);
+			return { success: false, message: `Activate what? Available: ${availableElements.join(', ')}` };
+		}
+
+		const element = currentRoom.interactiveElements.find(
+			e => e.name.toLowerCase().includes(targetName.toLowerCase()) || e.type.toLowerCase().includes(targetName.toLowerCase())
+		);
+
+		if (!element) {
+			return { success: false, message: `There's no ${targetName} here to activate.` };
+		}
+
+		const result = this.environmentalSystem.activateInteractiveElement(element, gameState);
+		return { success: result.success, message: result.message };
+	}
+
+	private executePull(targetName: string | undefined, gameState: GameState): CommandResult {
+		const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
+		if (!currentRoom || !currentRoom.interactiveElements) {
+			return { success: false, message: "There's nothing here to pull." };
+		}
+
+		if (!targetName) {
+			return { success: false, message: "Pull what?" };
+		}
+
+		const element = currentRoom.interactiveElements.find(
+			e => e.name.toLowerCase().includes(targetName.toLowerCase()) &&
+				 (e.type === 'lever' || e.type === 'switch' || targetName.toLowerCase().includes('lever'))
+		);
+
+		if (!element) {
+			return { success: false, message: `There's no ${targetName} here to pull.` };
+		}
+
+		const result = this.environmentalSystem.activateInteractiveElement(element, gameState);
+		return { success: result.success, message: result.message };
+	}
+
+	private executePush(targetName: string | undefined, gameState: GameState): CommandResult {
+		const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
+		if (!currentRoom || !currentRoom.interactiveElements) {
+			return { success: false, message: "There's nothing here to push." };
+		}
+
+		if (!targetName) {
+			return { success: false, message: "Push what?" };
+		}
+
+		const element = currentRoom.interactiveElements.find(
+			e => e.name.toLowerCase().includes(targetName.toLowerCase()) &&
+				 (e.type === 'pressure_plate' || e.type === 'switch' || targetName.toLowerCase().includes('button'))
+		);
+
+		if (!element) {
+			return { success: false, message: `There's no ${targetName} here to push.` };
+		}
+
+		const result = this.environmentalSystem.activateInteractiveElement(element, gameState);
+		return { success: result.success, message: result.message };
+	}
+
+	private executeTouch(targetName: string | undefined, gameState: GameState): CommandResult {
+		if (!targetName) {
+			return { success: false, message: "Touch what?" };
+		}
+
+		const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
+		if (!currentRoom) {
+			return { success: false, message: "You are in an unknown location." };
+		}
+
+		// Check for interactive elements first
+		if (currentRoom.interactiveElements) {
+			const element = currentRoom.interactiveElements.find(
+				e => e.name.toLowerCase().includes(targetName.toLowerCase())
+			);
+			if (element) {
+				const result = this.environmentalSystem.activateInteractiveElement(element, gameState);
+				return { success: result.success, message: result.message };
+			}
+		}
+
+		// Generic touch response
+		return { success: true, message: `You touch the ${targetName}. It feels cold and rough to the touch.` };
+	}
+
+	private executeWait(gameState: GameState): CommandResult {
+		// Process environmental effects for this turn
+		const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
+		if (currentRoom && currentRoom.hazards && currentRoom.hazards.length > 0) {
+			const results = this.environmentalSystem.processEnvironmentalEffects(currentRoom, gameState.character);
+			if (results.length > 0) {
+				return {
+					success: true,
+					message: `You wait and observe your surroundings.\n${results.join(' ')}`,
+					messageType: MessageType.SYSTEM
+				};
+			}
+		}
+
+		// Increment turn counter
+		gameState.turnCount++;
+
+		return { success: true, message: "You wait and observe your surroundings." };
+	}
+
 	private getBasicRoomDescription(room: any): string {
+		let description = '';
+
 		switch (room.roomType) {
 			case 'entrance':
-				return "You stand at the entrance to the dungeon. Ancient stone walls stretch into darkness ahead.";
+				description = "You stand at the entrance to the dungeon. Ancient stone walls stretch into darkness ahead.";
+				break;
 			case 'corridor':
-				return "You are in a narrow stone corridor. Torchlight flickers against the damp walls.";
+				description = "You are in a narrow stone corridor. Torchlight flickers against the damp walls.";
+				break;
 			case 'chamber':
-				return "You enter a large chamber with high vaulted ceilings. Shadows dance in the corners.";
+				description = "You enter a large chamber with high vaulted ceilings. Shadows dance in the corners.";
+				break;
 			case 'armory':
-				return "This appears to be an old armory. Weapon racks line the walls, though most are empty.";
+				description = "This appears to be an old armory. Weapon racks line the walls, though most are empty.";
+				break;
 			case 'library':
-				return "You are in what was once a library. Dusty tomes and scrolls are scattered about.";
+				description = "You are in what was once a library. Dusty tomes and scrolls are scattered about.";
+				break;
 			case 'throne_room':
-				return "A grand throne room stretches before you. An ornate throne sits upon a raised dais.";
+				description = "A grand throne room stretches before you. An ornate throne sits upon a raised dais.";
+				break;
 			case 'treasure_room':
-				return "This room glitters with the promise of treasure. Gold coins are scattered on the floor.";
+				description = "This room glitters with the promise of treasure. Gold coins are scattered on the floor.";
+				break;
 			default:
-				return "You are in a stone room. The walls are rough-hewn and ancient.";
+				description = "You are in a stone room. The walls are rough-hewn and ancient.";
 		}
+
+		// Add environmental hazard descriptions
+		if (room.hazards && room.hazards.length > 0) {
+			const hazardDescriptions = room.hazards.map((hazard: any) => {
+				switch (hazard.type) {
+					case 'poison_gas':
+						return 'A sickly green mist hangs in the air.';
+					case 'extreme_cold':
+						return 'Your breath mists in the frigid air.';
+					case 'magical_darkness':
+						return 'Unnatural shadows seem to writhe and move.';
+					case 'unstable_floor':
+						return 'The floor creaks ominously underfoot.';
+					default:
+						return hazard.description;
+				}
+			});
+			description += ` ${hazardDescriptions.join(' ')}`;
+		}
+
+		// Add interactive element descriptions
+		if (room.interactiveElements && room.interactiveElements.length > 0) {
+			const elementDescriptions = room.interactiveElements.map((element: any) => {
+				if (element.type === 'lever') {
+					return element.activated ? 'A lever sits in the pulled position.' : 'A lever protrudes from the wall.';
+				} else if (element.type === 'altar') {
+					return 'An ancient altar stands in the center of the room.';
+				} else if (element.type === 'fountain') {
+					return 'A stone fountain bubbles quietly.';
+				}
+				return element.description;
+			});
+			description += ` ${elementDescriptions.join(' ')}`;
+		}
+
+		return description;
 	}
 }

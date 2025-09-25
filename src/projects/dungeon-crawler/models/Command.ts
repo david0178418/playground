@@ -37,6 +37,11 @@ export enum ActionType {
 	DETECT_TRAPS = "detect_traps",
 	DISARM_TRAP = "disarm_trap",
 	SOLVE_PUZZLE = "solve_puzzle",
+	ACTIVATE = "activate",
+	PULL = "pull",
+	PUSH = "push",
+	TOUCH = "touch",
+	WAIT = "wait",
 
 	// Meta
 	SAVE = "save",

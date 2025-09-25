@@ -9,6 +9,7 @@ import { CommandProcessor } from './CommandProcessor';
 import { CombatSystem } from './CombatSystem';
 import { MagicSystem } from './MagicSystem';
 import { InteractionSystem } from './InteractionSystem';
+import { EnvironmentalSystem } from './EnvironmentalSystem';
 import { RandomGenerator } from '../utils/RandomGenerator';
 
 export class GameEngine {
@@ -17,6 +18,7 @@ export class GameEngine {
 	private combatSystem: CombatSystem;
 	private magicSystem: MagicSystem;
 	private interactionSystem: InteractionSystem;
+	private environmentalSystem: EnvironmentalSystem;
 	private rng: RandomGenerator;
 
 	constructor() {
@@ -26,6 +28,7 @@ export class GameEngine {
 		this.combatSystem = new CombatSystem();
 		this.magicSystem = new MagicSystem();
 		this.interactionSystem = new InteractionSystem();
+		this.environmentalSystem = new EnvironmentalSystem();
 	}
 
 	getMagicSystem(): MagicSystem {
@@ -355,6 +358,9 @@ export class GameEngine {
 					this.addMessage(newState, result.message, result.messageType || MessageType.ACTION);
 				}
 
+				// Process environmental effects at the end of each turn
+				this.processEnvironmentalEffects(newState);
+
 				// Check for traps and combat after successful actions
 				this.checkForTraps(newState);
 				this.checkForCombat(newState);
@@ -481,25 +487,91 @@ export class GameEngine {
 		this.addMessage(gameState, description, MessageType.DESCRIPTION);
 	}
 
+	private processEnvironmentalEffects(gameState: GameState): void {
+		const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
+		if (!currentRoom) return;
+
+		// Process environmental hazards
+		if (currentRoom.hazards && currentRoom.hazards.length > 0) {
+			const results = this.environmentalSystem.processEnvironmentalEffects(currentRoom, gameState.character);
+			for (const message of results) {
+				this.addMessage(gameState, message, MessageType.SYSTEM);
+			}
+		}
+
+		// Process character status effects
+		if (gameState.character.statusEffects) {
+			const statusResults = this.environmentalSystem.processStatusEffects(gameState.character);
+			for (const message of statusResults) {
+				this.addMessage(gameState, message, MessageType.SYSTEM);
+			}
+		}
+	}
+
 	private getBasicRoomDescription(room: any): string {
+		let description = '';
+
 		switch (room.roomType) {
 			case 'entrance':
-				return "You stand at the entrance to the dungeon. Ancient stone walls stretch into darkness ahead.";
+				description = "You stand at the entrance to the dungeon. Ancient stone walls stretch into darkness ahead.";
+				break;
 			case 'corridor':
-				return "You are in a narrow stone corridor. Torchlight flickers against the damp walls.";
+				description = "You are in a narrow stone corridor. Torchlight flickers against the damp walls.";
+				break;
 			case 'chamber':
-				return "You enter a large chamber with high vaulted ceilings. Shadows dance in the corners.";
+				description = "You enter a large chamber with high vaulted ceilings. Shadows dance in the corners.";
+				break;
 			case 'armory':
-				return "This appears to be an old armory. Weapon racks line the walls, though most are empty.";
+				description = "This appears to be an old armory. Weapon racks line the walls, though most are empty.";
+				break;
 			case 'library':
-				return "You are in what was once a library. Dusty tomes and scrolls are scattered about.";
+				description = "You are in what was once a library. Dusty tomes and scrolls are scattered about.";
+				break;
 			case 'throne_room':
-				return "A grand throne room stretches before you. An ornate throne sits upon a raised dais.";
+				description = "A grand throne room stretches before you. An ornate throne sits upon a raised dais.";
+				break;
 			case 'treasure_room':
-				return "This room glitters with the promise of treasure. Gold coins are scattered on the floor.";
+				description = "This room glitters with the promise of treasure. Gold coins are scattered on the floor.";
+				break;
 			default:
-				return "You are in a stone room. The walls are rough-hewn and ancient.";
+				description = "You are in a stone room. The walls are rough-hewn and ancient.";
 		}
+
+		// Add environmental hazard descriptions
+		if (room.hazards && room.hazards.length > 0) {
+			const hazardDescriptions = room.hazards.map((hazard: any) => {
+				switch (hazard.type) {
+					case 'poison_gas':
+						return 'A sickly green mist hangs in the air.';
+					case 'extreme_cold':
+						return 'Your breath mists in the frigid air.';
+					case 'magical_darkness':
+						return 'Unnatural shadows seem to writhe and move.';
+					case 'unstable_floor':
+						return 'The floor creaks ominously underfoot.';
+					default:
+						return hazard.description;
+				}
+			});
+			description += ` ${hazardDescriptions.join(' ')}`;
+		}
+
+		// Add interactive element descriptions
+		if (room.interactiveElements && room.interactiveElements.length > 0) {
+			const elementDescriptions = room.interactiveElements.map((element: any) => {
+				if (element.type === 'lever') {
+					return element.activated ? 'A lever sits in the pulled position.' : 'A lever protrudes from the wall.';
+				} else if (element.type === 'altar') {
+					return 'An ancient altar stands in the center of the room.';
+				} else if (element.type === 'fountain') {
+					return 'A stone fountain bubbles quietly.';
+				}
+				return element.description;
+			});
+			description += ` ${elementDescriptions.join(' ')}`;
+		}
+
+		return description;
 	}
 
 	private addMessage(gameState: GameState, text: string, type: MessageType): void {

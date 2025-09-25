@@ -9,6 +9,7 @@ export interface Character {
 	inventory: Item[];
 	experience: number;
 	classAbilities: string[]; // IDs of unlocked abilities
+	statusEffects?: import('./Room').CharacterStatusEffect[];
 }
 
 export interface StatBlock {
