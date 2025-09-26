@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, memo, useMemo } from 'react';
 import { Paper, Box, Typography } from '@mui/material';
 import type { Message } from '../models/Room';
 import { MessageType } from '../models/Room';
@@ -8,9 +8,9 @@ interface MessageLogProps {
 	maxMessages?: number;
 }
 
-export function MessageLog({ messages, maxMessages = 50 }: MessageLogProps) {
+export const MessageLog = memo(function MessageLog({ messages, maxMessages = 50 }: MessageLogProps) {
 	const messagesContainerRef = useRef<HTMLDivElement>(null);
-	const recentMessages = messages.slice(-maxMessages);
+	const recentMessages = useMemo(() => messages.slice(-maxMessages), [messages, maxMessages]);
 
 	// Auto-scroll to bottom when new messages arrive
 	useEffect(() => {
@@ -59,4 +59,4 @@ export function MessageLog({ messages, maxMessages = 50 }: MessageLogProps) {
 			</Box>
 		</Paper>
 	);
-}
+});

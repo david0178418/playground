@@ -9,8 +9,10 @@ import { CommandProcessor } from './CommandProcessor';
 import { CombatSystem } from './CombatSystem';
 import { MagicSystem } from './MagicSystem';
 import { InteractionSystem } from './InteractionSystem';
-import { EnvironmentalSystem } from './EnvironmentalSystem';
+import { HazardSystem } from './HazardSystem';
+import { StatusEffectSystem } from './StatusEffectSystem';
 import { SaveSystem } from './SaveSystem';
+import { AutoSaveService } from '../services/AutoSaveService';
 import { RandomGenerator } from '../utils/RandomGenerator';
 import type { SaveOperation, LoadOperation, SaveSlot } from '../models/SaveData';
 
@@ -20,10 +22,11 @@ export class GameEngine {
 	private combatSystem: CombatSystem;
 	private magicSystem: MagicSystem;
 	private interactionSystem: InteractionSystem;
-	private environmentalSystem: EnvironmentalSystem;
+	private hazardSystem: HazardSystem;
+	private statusEffectSystem: StatusEffectSystem;
 	private saveSystem: SaveSystem;
+	private autoSaveService: AutoSaveService;
 	private rng: RandomGenerator;
-	private lastAutoSaveTurn: number = 0;
 
 	constructor() {
 		this.rng = new RandomGenerator();
@@ -32,8 +35,10 @@ export class GameEngine {
 		this.combatSystem = new CombatSystem();
 		this.magicSystem = new MagicSystem();
 		this.interactionSystem = new InteractionSystem();
-		this.environmentalSystem = new EnvironmentalSystem();
+		this.hazardSystem = new HazardSystem();
+		this.statusEffectSystem = new StatusEffectSystem();
 		this.saveSystem = new SaveSystem();
+		this.autoSaveService = new AutoSaveService(this.saveSystem);
 	}
 
 	getMagicSystem(): MagicSystem {
@@ -57,7 +62,7 @@ export class GameEngine {
 	}
 
 	async autoSave(gameState: GameState): Promise<SaveOperation> {
-		return await this.saveSystem.autoSave(gameState);
+		return await this.autoSaveService.directAutoSave(gameState);
 	}
 
 	getSaveSlots(): SaveSlot[] {
@@ -84,19 +89,6 @@ export class GameEngine {
 		return await this.saveSystem.loadMostRecentSave();
 	}
 
-	// Auto-save at key moments in the game
-	private async triggerAutoSave(gameState: GameState, reason: string): Promise<void> {
-		try {
-			const result = await this.autoSave(gameState);
-			if (result.result === 'success') {
-				console.log(`Auto-save successful: ${reason}`);
-			} else {
-				console.warn(`Auto-save failed: ${result.message}`);
-			}
-		} catch (error) {
-			console.warn(`Auto-save error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-		}
-	}
 
 	async startNewGame(character?: Character): Promise<GameState> {
 		// Use provided character or create default
@@ -136,7 +128,7 @@ export class GameEngine {
 			throw new Error('No active combat state');
 		}
 
-		const newState = { ...gameState };
+		const newState = this.createGameStateCopy(gameState);
 		const combatState = newState.combatState;
 
 		if (!combatState) {
@@ -159,7 +151,8 @@ export class GameEngine {
 			// Check if combat ended from player action
 			const combatStatus = this.combatSystem.checkCombatEnd(combatState);
 			if (combatStatus !== CombatStatus.ACTIVE) {
-				return this.handleCombatEnd(newState, combatStatus);
+				this.handleCombatEnd(newState, combatStatus);
+				return newState;
 			}
 
 			// Advance to next turn after player action
@@ -202,8 +195,14 @@ export class GameEngine {
 				// Check if combat ended after enemy turn
 				const enemyTurnStatus = this.combatSystem.checkCombatEnd(combatState);
 				if (enemyTurnStatus !== CombatStatus.ACTIVE) {
-					return this.handleCombatEnd(newState, enemyTurnStatus);
+					this.handleCombatEnd(newState, enemyTurnStatus);
+					return newState;
 				}
+			}
+
+			// Auto-save after combat turn (if combat is still active)
+			if (newState.combatState) {
+				this.autoSave(newState);
 			}
 
 			return newState;
@@ -213,30 +212,28 @@ export class GameEngine {
 		}
 	}
 
-	private handleCombatEnd(gameState: GameState, status: CombatStatus): GameState {
-		const newState = { ...gameState };
-
+	private handleCombatEnd(gameState: GameState, status: CombatStatus): void {
 		switch (status) {
 			case CombatStatus.VICTORY:
-				this.addMessage(newState, "🎉 Victory! You have defeated all enemies!", MessageType.SYSTEM);
-				this.handleCombatVictory(newState);
+				this.addMessage(gameState, "🎉 Victory! You have defeated all enemies!", MessageType.SYSTEM);
+				this.handleCombatVictory(gameState);
 				break;
 
 			case CombatStatus.DEFEAT:
-				this.addMessage(newState, "💀 You have been defeated...", MessageType.SYSTEM);
-				this.handleCombatDefeat(newState);
+				this.addMessage(gameState, "💀 You have been defeated...", MessageType.SYSTEM);
+				this.handleCombatDefeat(gameState);
 				break;
 
 			case CombatStatus.FLED:
-				this.addMessage(newState, "🏃 You successfully fled from combat.", MessageType.SYSTEM);
+				this.addMessage(gameState, "🏃 You successfully fled from combat.", MessageType.SYSTEM);
 				break;
 		}
 
 		// Clear combat state
-		newState.combatState = undefined;
+		gameState.combatState = undefined;
 
 		// Update room state
-		const currentRoom = newState.dungeon.rooms.get(newState.currentRoomId);
+		const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
 		if (currentRoom && status === CombatStatus.VICTORY) {
 			// Remove defeated enemies
 			currentRoom.contents.enemies = [];
@@ -244,12 +241,10 @@ export class GameEngine {
 
 		// Auto-save after combat resolution (when combat state is properly cleared)
 		if (status === CombatStatus.VICTORY) {
-			this.triggerAutoSave(newState, 'combat victory');
+			this.autoSaveService.autoSaveOnCombatEvent(gameState, 'victory');
 		} else if (status === CombatStatus.DEFEAT) {
-			this.triggerAutoSave(newState, 'combat defeat - player respawned');
+			this.autoSaveService.autoSaveOnCombatEvent(gameState, 'defeat');
 		}
-
-		return newState;
 	}
 
 	private handleCombatVictory(gameState: GameState): void {
@@ -268,7 +263,7 @@ export class GameEngine {
 			this.addMessage(gameState, `🎊 Level up! You are now level ${newLevel}! (+${hpIncrease} HP)`, MessageType.SYSTEM);
 
 			// Auto-save after level up
-			this.triggerAutoSave(gameState, `level up to ${newLevel}`);
+			this.autoSaveService.autoSaveOnLevelUp(gameState, newLevel);
 		}
 
 		// Note: Auto-save will happen in handleCombatEnd after combat state is cleared
@@ -325,7 +320,7 @@ export class GameEngine {
 		gameState: GameState,
 		targetIds?: string[]
 	): Promise<GameState> {
-		const newState = { ...gameState };
+		const newState = this.createGameStateCopy(gameState);
 
 		try {
 			// Get spell targets (for now, just damage all enemies in combat)
@@ -383,7 +378,7 @@ export class GameEngine {
 
 			// If it's the player's turn, stop
 			if (currentParticipant?.type === ParticipantType.PLAYER) {
-				break;
+				return;
 			}
 
 			// Process enemy turn
@@ -420,7 +415,7 @@ export class GameEngine {
 	async processCommand(commandText: string, gameState: GameState): Promise<GameState> {
 		try {
 			const command = this.commandProcessor.parseCommand(commandText);
-			const newState = { ...gameState };
+			const newState = this.createGameStateCopy(gameState);
 
 			const result = await this.commandProcessor.executeCommand(command, newState);
 
@@ -437,16 +432,12 @@ export class GameEngine {
 				this.checkForTraps(newState);
 				this.checkForCombat(newState);
 
-				// Periodic auto-save (every 10 turns)
-				const AUTOSAVE_INTERVAL = 10;
-				if (newState.turnCount - this.lastAutoSaveTurn >= AUTOSAVE_INTERVAL) {
-					this.lastAutoSaveTurn = newState.turnCount;
-					this.triggerAutoSave(newState, `periodic save after ${newState.turnCount} turns`);
-				}
+				// Periodic auto-save
+				this.autoSaveService.performPeriodicAutoSave(newState);
 
 				// Auto-save on room movement
-				if (result.message && (result.message.includes('You enter') || result.message.includes('You go'))) {
-					this.triggerAutoSave(newState, 'room movement');
+				if (result.message) {
+					this.autoSaveService.autoSaveOnRoomMovement(newState, result.message);
 				}
 			} else {
 				this.addMessage(newState, result.message || "Command failed.", MessageType.ERROR);
@@ -454,7 +445,7 @@ export class GameEngine {
 
 			return newState;
 		} catch (error) {
-			const newState = { ...gameState };
+			const newState = this.createGameStateCopy(gameState);
 			this.addMessage(newState, `Error: ${error instanceof Error ? error.message : 'Unknown error'}`, MessageType.ERROR);
 			return newState;
 		}
@@ -577,7 +568,13 @@ export class GameEngine {
 
 		// Process environmental hazards
 		if (currentRoom.hazards && currentRoom.hazards.length > 0) {
-			const results = this.environmentalSystem.processEnvironmentalEffects(gameState.character, currentRoom);
+			const hazardResults = this.hazardSystem.processRoomHazards(gameState.character, currentRoom);
+			const results = hazardResults.map(r => ({
+				success: r.success,
+				message: r.message,
+				damage: r.damage,
+				statusEffects: r.statusEffects
+			}));
 			for (const result of results) {
 				this.addMessage(gameState, result.message, MessageType.SYSTEM);
 			}
@@ -585,7 +582,7 @@ export class GameEngine {
 
 		// Process character status effects
 		if (gameState.character.statusEffects) {
-			const statusResult = this.environmentalSystem.processStatusEffects(gameState.character);
+			const statusResult = this.statusEffectSystem.processStatusEffects(gameState.character);
 			if (statusResult) {
 				this.addMessage(gameState, statusResult.message, MessageType.SYSTEM);
 			}
@@ -656,6 +653,57 @@ export class GameEngine {
 		}
 
 		return description;
+	}
+
+	private createGameStateCopy(gameState: GameState): GameState {
+		return {
+			...gameState,
+			messageLog: [...gameState.messageLog],
+			character: {
+				...gameState.character,
+				hp: { ...gameState.character.hp },
+				mana: gameState.character.mana ? { ...gameState.character.mana } : undefined,
+				stats: { ...gameState.character.stats },
+				equipment: {
+					...gameState.character.equipment,
+					weapon: gameState.character.equipment.weapon ? { ...gameState.character.equipment.weapon } : undefined,
+					armor: gameState.character.equipment.armor ? { ...gameState.character.equipment.armor } : undefined,
+					shield: gameState.character.equipment.shield ? { ...gameState.character.equipment.shield } : undefined,
+				},
+				inventory: [...gameState.character.inventory],
+				statusEffects: gameState.character.statusEffects ? [...gameState.character.statusEffects] : []
+			},
+			dungeon: {
+				...gameState.dungeon,
+				rooms: new Map(Array.from(gameState.dungeon.rooms, ([key, room]) => [
+					key,
+					{
+						...room,
+						contents: {
+							...room.contents,
+							enemies: [...room.contents.enemies],
+							items: [...room.contents.items],
+							features: [...room.contents.features]
+						},
+						exits: new Map(room.exits),
+						lockedExits: room.lockedExits ? new Map(room.lockedExits) : undefined,
+						traps: room.traps ? [...room.traps] : undefined,
+						puzzles: room.puzzles ? [...room.puzzles] : undefined,
+						hazards: room.hazards ? [...room.hazards] : undefined,
+						interactiveElements: room.interactiveElements ? [...room.interactiveElements] : undefined
+					}
+				]))
+			},
+			combatState: gameState.combatState ? {
+				...gameState.combatState,
+				participants: gameState.combatState.participants.map(p => ({
+					...p,
+					character: p.character ? { ...p.character } : undefined,
+					enemy: p.enemy ? { ...p.enemy } : undefined
+				})),
+				turnOrder: [...gameState.combatState.turnOrder]
+			} : undefined
+		};
 	}
 
 	private addMessage(gameState: GameState, text: string, type: MessageType): void {

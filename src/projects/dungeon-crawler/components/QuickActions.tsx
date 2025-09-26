@@ -1,4 +1,5 @@
 import { Box, Button, ButtonGroup, Chip, Stack, Typography } from '@mui/material';
+import { memo } from 'react';
 import {
 	Visibility as LookIcon,
 	Inventory as InventoryIcon,
@@ -9,6 +10,7 @@ import {
 } from '@mui/icons-material';
 import type { GameState } from '../models/Room';
 import { EnhancedTooltip, gameTooltips } from './EnhancedTooltip';
+import { isInCombat, hasMana, hasStatusEffects } from '../utils/guards';
 
 interface QuickActionsProps {
 	gameState: GameState;
@@ -17,34 +19,36 @@ interface QuickActionsProps {
 	onShowSpellBook?: () => void;
 }
 
-export function QuickActions({ gameState, onCommand, onCombatAction, onShowSpellBook }: QuickActionsProps) {
-	const inCombat = !!gameState.combatState;
+export const QuickActions = memo(function QuickActions({ gameState, onCommand, onCombatAction, onShowSpellBook }: QuickActionsProps) {
+	const inCombat = isInCombat(gameState);
 	const canRest = !inCombat && gameState.character.hp.current < gameState.character.hp.max;
-	const hasSpells = gameState.character.mana && onShowSpellBook;
+	const hasSpells = hasMana(gameState.character) && onShowSpellBook;
 
-	const quickCommands = [
-		{
-			icon: <LookIcon />,
-			label: 'Look',
-			command: 'look',
-			tooltip: gameTooltips.commands.look,
-			disabled: false
-		},
-		{
-			icon: <InventoryIcon />,
-			label: 'Inventory',
-			command: 'inventory',
-			tooltip: gameTooltips.commands.inventory,
-			disabled: false
-		},
-		{
-			icon: <RestIcon />,
-			label: 'Rest',
-			command: 'rest',
-			tooltip: gameTooltips.commands.rest,
-			disabled: !canRest
-		}
-	];
+	const lookCommand = {
+		icon: <LookIcon />,
+		label: 'Look',
+		command: 'look',
+		tooltip: gameTooltips.commands.look,
+		disabled: false
+	};
+
+	const inventoryCommand = {
+		icon: <InventoryIcon />,
+		label: 'Inventory',
+		command: 'inventory',
+		tooltip: gameTooltips.commands.inventory,
+		disabled: false
+	};
+
+	const restCommand = {
+		icon: <RestIcon />,
+		label: 'Rest',
+		command: 'rest',
+		tooltip: gameTooltips.commands.rest,
+		disabled: !canRest
+	};
+
+	const quickCommands = [lookCommand, inventoryCommand];
 
 	const combatActions = [
 		{
@@ -97,7 +101,7 @@ export function QuickActions({ gameState, onCommand, onCombatAction, onShowSpell
 					{inCombat && (
 						<Chip
 							size="small"
-							label={`Combat Round ${gameState.combatState!.round}`}
+							label={`Combat Round ${gameState.combatState.round}`}
 							color="error"
 							variant="filled"
 						/>
@@ -113,7 +117,7 @@ export function QuickActions({ gameState, onCommand, onCombatAction, onShowSpell
 				</Stack>
 
 				{/* Status Effects */}
-				{gameState.character.statusEffects && gameState.character.statusEffects.length > 0 && (
+				{hasStatusEffects(gameState.character) && (
 					<Box sx={{ mt: 1 }}>
 						<Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
 							Status Effects:
@@ -175,7 +179,7 @@ export function QuickActions({ gameState, onCommand, onCombatAction, onShowSpell
 					</Typography>
 					<Stack spacing={1}>
 						<ButtonGroup variant="outlined" size="small" fullWidth>
-							{quickCommands.slice(0, 2).map((cmd) => (
+							{quickCommands.map((cmd) => (
 								<EnhancedTooltip key={cmd.command} {...cmd.tooltip}>
 									<Button
 										startIcon={cmd.icon}
@@ -189,17 +193,15 @@ export function QuickActions({ gameState, onCommand, onCombatAction, onShowSpell
 						</ButtonGroup>
 
 						<ButtonGroup variant="outlined" size="small" fullWidth>
-							{quickCommands[2] && (
-								<EnhancedTooltip {...quickCommands[2].tooltip}>
-									<Button
-										startIcon={quickCommands[2].icon}
-										disabled={quickCommands[2].disabled}
-										onClick={() => onCommand(quickCommands[2]!.command)}
-									>
-										{quickCommands[2].label}
-									</Button>
-								</EnhancedTooltip>
-							)}
+							<EnhancedTooltip {...restCommand.tooltip}>
+								<Button
+									startIcon={restCommand.icon}
+									disabled={restCommand.disabled}
+									onClick={() => onCommand(restCommand.command)}
+								>
+									{restCommand.label}
+								</Button>
+							</EnhancedTooltip>
 
 							{hasSpells && onShowSpellBook && (
 								<EnhancedTooltip {...gameTooltips.commands.cast}>
@@ -217,4 +219,4 @@ export function QuickActions({ gameState, onCommand, onCombatAction, onShowSpell
 			)}
 		</Box>
 	);
-}
+});

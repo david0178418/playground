@@ -8,6 +8,7 @@ import type {
 import { AIBehaviorType, ConditionType } from '../models/EnemyAbility';
 import { CombatActionType as ActionType } from '../models/Combat';
 import { RandomGenerator } from '../utils/RandomGenerator';
+import { isValidEnemyParticipant, isValidCharacterParticipant } from '../utils/guards';
 
 export interface TacticalSituation {
 	enemyHealthPercentage: number;
@@ -74,8 +75,9 @@ export class AIBehaviorSystem {
 			p => p.type === 'enemy' && p.isActive && p.id !== enemy.id
 		);
 
-		const enemyHealth = enemy.enemy!.hp.current / enemy.enemy!.hp.max;
-		const playerHealth = player?.character ?
+		const enemyHealth = isValidEnemyParticipant(enemy) ?
+			enemy.enemy.hp.current / enemy.enemy.hp.max : 0;
+		const playerHealth = isValidCharacterParticipant(player) ?
 			player.character.hp.current / player.character.hp.max : 0;
 
 		return {

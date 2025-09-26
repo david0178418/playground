@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import type { Character, StatBlock } from '../models/Character';
 import { CharacterClass } from '../models/Character';
+import { formatStatModifier } from '../utils/gameUtils';
 
 interface CharacterCreationProps {
 	onCharacterCreated: (character: Character) => void;
@@ -155,10 +156,6 @@ export function CharacterCreation({ onCharacterCreated }: CharacterCreationProps
 		setPointsRemaining(pointsRemaining - costDifference);
 	};
 
-	const getStatModifier = (stat: number) => {
-		const modifier = Math.floor((stat - 10) / 2);
-		return modifier >= 0 ? `+${modifier}` : `${modifier}`;
-	};
 
 	return (
 		<Paper sx={{ p: 4, maxWidth: 800, margin: 'auto' }}>
@@ -274,7 +271,7 @@ export function CharacterCreation({ onCharacterCreated }: CharacterCreationProps
 									)}
 								</Box>
 								<Typography variant="caption" color="text.secondary">
-									{getStatModifier(currentStats[stat])}
+									{formatStatModifier(currentStats[stat])}
 								</Typography>
 							</Paper>
 						</Grid>

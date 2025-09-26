@@ -4,21 +4,24 @@ import { RandomGenerator } from '../utils/RandomGenerator';
 import { EnemyGenerator } from './EnemyGenerator';
 import { ItemGenerator } from './ItemGenerator';
 import { InteractionSystem } from './InteractionSystem';
-import { EnvironmentalSystem } from './EnvironmentalSystem';
+import { HazardSystem } from './HazardSystem';
+import { InteractiveElementSystem } from './InteractiveElementSystem';
 
 export class DungeonGenerator {
 	private rng: RandomGenerator;
 	private enemyGenerator: EnemyGenerator;
 	private itemGenerator: ItemGenerator;
 	private interactionSystem: InteractionSystem;
-	private environmentalSystem: EnvironmentalSystem;
+	private hazardSystem: HazardSystem;
+	private interactiveElementSystem: InteractiveElementSystem;
 
 	constructor(rng: RandomGenerator) {
 		this.rng = rng;
 		this.enemyGenerator = new EnemyGenerator(rng);
 		this.itemGenerator = new ItemGenerator(rng);
 		this.interactionSystem = new InteractionSystem();
-		this.environmentalSystem = new EnvironmentalSystem();
+		this.hazardSystem = new HazardSystem();
+		this.interactiveElementSystem = new InteractiveElementSystem();
 	}
 
 	generateDungeon(size: number = 15): Dungeon {
@@ -518,7 +521,7 @@ export class DungeonGenerator {
 			// Add environmental hazards (25% chance, higher in deeper rooms)
 			const hazardChance = Math.min(0.4, 0.15 + (roomDepth * 0.05));
 			if (this.rng.chance(hazardChance)) {
-				const hazard = this.environmentalSystem.generateHazard(room.roomType, roomDepth, this.rng);
+				const hazard = this.hazardSystem.generateHazard(room.roomType, roomDepth, this.rng);
 				if (hazard) {
 					if (!room.hazards) room.hazards = [];
 					room.hazards.push(hazard);
@@ -543,7 +546,7 @@ export class DungeonGenerator {
 			}
 
 			if (this.rng.chance(interactiveChance)) {
-				const element = this.environmentalSystem.generateInteractiveElement(room.roomType, roomDepth, this.rng);
+				const element = this.interactiveElementSystem.generateInteractiveElement(room.roomType, roomDepth, this.rng);
 				if (element) {
 					if (!room.interactiveElements) room.interactiveElements = [];
 					room.interactiveElements.push(element);

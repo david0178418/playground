@@ -1,41 +1,17 @@
 import { Paper, Typography, Box, Grid, LinearProgress, Chip, Stack } from '@mui/material';
+import { memo } from 'react';
 import type { Character } from '../models/Character';
 import { ClassAbilityManager } from '../models/ClassAbilities';
 import { EnhancedTooltip, gameTooltips } from './EnhancedTooltip';
+import { formatStatModifier, calculateAC } from '../utils/gameUtils';
 
 interface CharacterSheetProps {
 	character: Character;
 }
 
-export function CharacterSheet({ character }: CharacterSheetProps) {
-	const getStatModifier = (stat: number): string => {
-		const modifier = Math.floor((stat - 10) / 2);
-		return modifier >= 0 ? `+${modifier}` : `${modifier}`;
-	};
-
+export const CharacterSheet = memo(function CharacterSheet({ character }: CharacterSheetProps) {
 	const hpPercentage = (character.hp.current / character.hp.max) * 100;
-
-	const calculateAC = (): number => {
-		let baseAC = 10 + Math.floor((character.stats.dexterity - 10) / 2);
-
-		// Add armor AC bonus
-		if (character.equipment.armor) {
-			const acBonus = character.equipment.armor.properties.find(p => p.type === 'ac_bonus');
-			if (acBonus) {
-				baseAC += acBonus.value;
-			}
-		}
-
-		// Add shield AC bonus
-		if (character.equipment.shield) {
-			const acBonus = character.equipment.shield.properties.find(p => p.type === 'ac_bonus');
-			if (acBonus) {
-				baseAC += acBonus.value;
-			}
-		}
-
-		return baseAC;
-	};
+	const armorClass = calculateAC(character);
 
 	return (
 		<Paper sx={{ p: 2 }}>
@@ -98,7 +74,7 @@ export function CharacterSheet({ character }: CharacterSheetProps) {
 						<Box sx={{ textAlign: 'center', cursor: 'help' }}>
 							<Typography variant="body2">STR</Typography>
 							<Typography variant="h6">{character.stats.strength}</Typography>
-							<Typography variant="caption">{getStatModifier(character.stats.strength)}</Typography>
+							<Typography variant="caption">{formatStatModifier(character.stats.strength)}</Typography>
 						</Box>
 					</EnhancedTooltip>
 				</Grid>
@@ -107,7 +83,7 @@ export function CharacterSheet({ character }: CharacterSheetProps) {
 						<Box sx={{ textAlign: 'center', cursor: 'help' }}>
 							<Typography variant="body2">DEX</Typography>
 							<Typography variant="h6">{character.stats.dexterity}</Typography>
-							<Typography variant="caption">{getStatModifier(character.stats.dexterity)}</Typography>
+							<Typography variant="caption">{formatStatModifier(character.stats.dexterity)}</Typography>
 						</Box>
 					</EnhancedTooltip>
 				</Grid>
@@ -116,7 +92,7 @@ export function CharacterSheet({ character }: CharacterSheetProps) {
 						<Box sx={{ textAlign: 'center', cursor: 'help' }}>
 							<Typography variant="body2">CON</Typography>
 							<Typography variant="h6">{character.stats.constitution}</Typography>
-							<Typography variant="caption">{getStatModifier(character.stats.constitution)}</Typography>
+							<Typography variant="caption">{formatStatModifier(character.stats.constitution)}</Typography>
 						</Box>
 					</EnhancedTooltip>
 				</Grid>
@@ -125,7 +101,7 @@ export function CharacterSheet({ character }: CharacterSheetProps) {
 						<Box sx={{ textAlign: 'center', cursor: 'help' }}>
 							<Typography variant="body2">INT</Typography>
 							<Typography variant="h6">{character.stats.intelligence}</Typography>
-							<Typography variant="caption">{getStatModifier(character.stats.intelligence)}</Typography>
+							<Typography variant="caption">{formatStatModifier(character.stats.intelligence)}</Typography>
 						</Box>
 					</EnhancedTooltip>
 				</Grid>
@@ -134,7 +110,7 @@ export function CharacterSheet({ character }: CharacterSheetProps) {
 						<Box sx={{ textAlign: 'center', cursor: 'help' }}>
 							<Typography variant="body2">WIS</Typography>
 							<Typography variant="h6">{character.stats.wisdom}</Typography>
-							<Typography variant="caption">{getStatModifier(character.stats.wisdom)}</Typography>
+							<Typography variant="caption">{formatStatModifier(character.stats.wisdom)}</Typography>
 						</Box>
 					</EnhancedTooltip>
 				</Grid>
@@ -143,7 +119,7 @@ export function CharacterSheet({ character }: CharacterSheetProps) {
 						<Box sx={{ textAlign: 'center', cursor: 'help' }}>
 							<Typography variant="body2">CHA</Typography>
 							<Typography variant="h6">{character.stats.charisma}</Typography>
-							<Typography variant="caption">{getStatModifier(character.stats.charisma)}</Typography>
+							<Typography variant="caption">{formatStatModifier(character.stats.charisma)}</Typography>
 						</Box>
 					</EnhancedTooltip>
 				</Grid>
@@ -154,7 +130,7 @@ export function CharacterSheet({ character }: CharacterSheetProps) {
 			</Typography>
 
 			<Typography variant="body2" sx={{ mb: 2 }}>
-				Armor Class: {calculateAC()}
+				Armor Class: {armorClass}
 			</Typography>
 
 			<Typography variant="subtitle2" gutterBottom>
@@ -214,4 +190,4 @@ export function CharacterSheet({ character }: CharacterSheetProps) {
 			)}
 		</Paper>
 	);
-}
+});

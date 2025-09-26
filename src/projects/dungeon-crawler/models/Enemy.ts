@@ -5,6 +5,7 @@ export interface Enemy {
 	id: string;
 	name: string;
 	type: EnemyType;
+	description?: string;
 	stats: StatBlock;
 	hp: { current: number; max: number };
 	ac: number;
