@@ -26,3 +26,17 @@ export const calculateAC = (character: any): number => {
 
 	return baseAC;
 };
+
+export const getExperienceForLevel = (level: number): number => {
+	return (level - 1) * 100;
+};
+
+export const getExperienceToNextLevel = (currentExperience: number, currentLevel: number): number => {
+	const nextLevelRequirement = getExperienceForLevel(currentLevel + 1);
+	return nextLevelRequirement - currentExperience;
+};
+
+export const getExperienceInCurrentLevel = (currentExperience: number, currentLevel: number): number => {
+	const currentLevelStart = getExperienceForLevel(currentLevel);
+	return currentExperience - currentLevelStart;
+};

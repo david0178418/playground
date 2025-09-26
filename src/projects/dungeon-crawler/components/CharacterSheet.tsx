@@ -3,7 +3,7 @@ import { memo } from 'react';
 import type { Character } from '../models/Character';
 import { ClassAbilityManager } from '../models/ClassAbilities';
 import { EnhancedTooltip, gameTooltips } from './EnhancedTooltip';
-import { formatStatModifier, calculateAC } from '../utils/gameUtils';
+import { formatStatModifier, calculateAC, getExperienceForLevel } from '../utils/gameUtils';
 
 interface CharacterSheetProps {
 	character: Character;
@@ -12,6 +12,7 @@ interface CharacterSheetProps {
 export const CharacterSheet = memo(function CharacterSheet({ character }: CharacterSheetProps) {
 	const hpPercentage = (character.hp.current / character.hp.max) * 100;
 	const armorClass = calculateAC(character);
+	const experienceForNextLevel = getExperienceForLevel(character.level + 1);
 
 	return (
 		<Paper sx={{ p: 2 }}>
@@ -126,7 +127,7 @@ export const CharacterSheet = memo(function CharacterSheet({ character }: Charac
 			</Grid>
 
 			<Typography variant="body2" sx={{ mb: 1 }}>
-				Experience: {character.experience}
+				Experience: {character.experience}/{experienceForNextLevel}
 			</Typography>
 
 			<Typography variant="body2" sx={{ mb: 2 }}>

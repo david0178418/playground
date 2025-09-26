@@ -14,6 +14,7 @@ import { StatusEffectSystem } from './StatusEffectSystem';
 import { SaveSystem } from './SaveSystem';
 import { AutoSaveService } from '../services/AutoSaveService';
 import { RandomGenerator } from '../utils/RandomGenerator';
+import { getExperienceToNextLevel } from '../utils/gameUtils';
 import type { SaveOperation, LoadOperation, SaveSlot } from '../models/SaveData';
 
 export class GameEngine {
@@ -251,7 +252,8 @@ export class GameEngine {
 		// Award experience and loot
 		const xpGained = 50; // Simplified XP system
 		gameState.character.experience += xpGained;
-		this.addMessage(gameState, `You gained ${xpGained} experience points!`, MessageType.SYSTEM);
+		const xpToNext = getExperienceToNextLevel(gameState.character.experience, gameState.character.level);
+		this.addMessage(gameState, `You gained ${xpGained} experience points! (${xpToNext} XP to next level)`, MessageType.SYSTEM);
 
 		// Check for level up (simplified)
 		const newLevel = Math.floor(gameState.character.experience / 100) + 1;
