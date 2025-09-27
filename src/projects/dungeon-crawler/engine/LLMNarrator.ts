@@ -12,6 +12,36 @@ interface TextGenerationResult {
 	generated_text: string;
 }
 
+interface ModelConfig {
+	id: string;
+	name: string;
+	modelPath: string;
+	parameters: string;
+	description: string;
+	performanceLevel: 'fast' | 'balanced' | 'quality';
+}
+
+const AVAILABLE_MODELS: ModelConfig[] = [
+	{
+		id: 'tinyllama-1.1b',
+		name: 'TinyLlama 1.1B',
+		modelPath: 'onnx-community/TinyLlama-1.1B-Chat-v1.0-ONNX',
+		parameters: '1.1B',
+		description: 'Larger model with better text quality',
+		performanceLevel: 'quality'
+	},
+	{
+		id: 'qwen-0.5b',
+		name: 'Qwen2.5 0.5B',
+		modelPath: 'onnx-community/Qwen2.5-0.5B-Instruct',
+		parameters: '500M',
+		description: 'Smaller, faster model with good quality',
+		performanceLevel: 'fast'
+	}
+] as const;
+
+type ModelId = typeof AVAILABLE_MODELS[number]['id'];
+
 interface RoomContext {
 	roomType: RoomType;
 	exits: string[];
@@ -24,28 +54,55 @@ interface RoomContext {
 
 export class LLMNarrator {
 	private generator: TextGenerator | null = null;
+	private currentModelId: ModelId | null = null;
 	private isInitialized = false;
 	private initializationPromise: Promise<void> | null = null;
 
-	async initialize(): Promise<void> {
-		if (this.isInitialized) return;
+	static getAvailableModels(): ModelConfig[] {
+		return [...AVAILABLE_MODELS];
+	}
+
+	static getModelConfig(modelId: ModelId): ModelConfig | undefined {
+		return AVAILABLE_MODELS.find(model => model.id === modelId);
+	}
+
+	getCurrentModelId(): ModelId | null {
+		return this.currentModelId;
+	}
+
+	async initialize(modelId: ModelId = 'tinyllama-1.1b'): Promise<void> {
+		// If already initialized with the same model, return
+		if (this.isInitialized && this.currentModelId === modelId) return;
+
+		// If switching models, reset initialization
+		if (this.currentModelId !== modelId) {
+			this.isInitialized = false;
+			this.initializationPromise = null;
+			this.generator = null;
+		}
+
 		if (this.initializationPromise) return this.initializationPromise;
 
-		this.initializationPromise = this.performInitialization();
+		this.initializationPromise = this.performInitialization(modelId);
 		await this.initializationPromise;
 	}
 
-	private async performInitialization(): Promise<void> {
+	private async performInitialization(modelId: ModelId): Promise<void> {
 		// Check if we're in a browser environment
 		if (typeof window === 'undefined') {
 			throw new Error('LLM Narrator requires browser environment');
 		}
 
+		const modelConfig = LLMNarrator.getModelConfig(modelId);
+		if (!modelConfig) {
+			throw new Error(`Unknown model ID: ${modelId}`);
+		}
+
 		// Import official Hugging Face transformers library
 		const { pipeline } = await import('@huggingface/transformers');
 
-		// Initialize the pipeline directly with official HF library using specific ONNX model
-		const generatorPipeline = await pipeline('text-generation', 'onnx-community/TinyLlama-1.1B-Chat-v1.0-ONNX', {
+		// Initialize the pipeline with the selected model
+		const generatorPipeline = await pipeline('text-generation', modelConfig.modelPath, {
 			device: 'wasm'
 		});
 
@@ -55,11 +112,13 @@ export class LLMNarrator {
 		}
 
 		this.generator = generatorPipeline as TextGenerator;
+		this.currentModelId = modelId;
 		this.isInitialized = true;
 	}
 
-	async describeRoom(room: Room, gameState: GameState): Promise<string> {
-		await this.initialize();
+	async describeRoom(room: Room, gameState: GameState, modelId?: ModelId): Promise<string> {
+		const targetModelId = modelId || this.currentModelId || 'tinyllama-1.1b';
+		await this.initialize(targetModelId);
 
 		const context = this.extractRoomContext(room);
 		const prompt = this.buildRoomPrompt(context, gameState);
@@ -87,6 +146,19 @@ export class LLMNarrator {
 		}
 
 		return this.cleanGeneratedText(generatedText, prompt);
+	}
+
+	async switchModel(modelId: ModelId): Promise<void> {
+		if (this.currentModelId === modelId) return;
+
+		// Reset current state
+		this.isInitialized = false;
+		this.initializationPromise = null;
+		this.generator = null;
+		this.currentModelId = null;
+
+		// Initialize with new model
+		await this.initialize(modelId);
 	}
 
 	private extractRoomContext(room: Room): RoomContext {
@@ -172,3 +244,6 @@ Describe this room as a dungeon master would:
 		return withPunctuation;
 	}
 }
+
+export { AVAILABLE_MODELS };
+export type { ModelConfig, ModelId };

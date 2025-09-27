@@ -5,6 +5,7 @@ import { GameEngine } from './engine/GameEngine';
 import type { GameState } from './models/Room';
 import type { Character } from './models/Character';
 import { CombatActionType } from './models/Combat';
+import type { ModelId } from './engine/LLMNarrator';
 
 export default function DungeonCrawler() {
 	const [gameEngine] = useState(() => new GameEngine());
@@ -12,6 +13,8 @@ export default function DungeonCrawler() {
 	const [showCharacterCreation, setShowCharacterCreation] = useState(true);
 	const [isLoading, setIsLoading] = useState(false);
 	const [hasCheckedForSaves, setHasCheckedForSaves] = useState(false);
+	const [selectedModelId, setSelectedModelId] = useState<ModelId>('tinyllama-1.1b');
+	const [isModelLoading, setIsModelLoading] = useState(false);
 
 	// Check for existing saves on component mount
 	useEffect(() => {
@@ -48,6 +51,14 @@ export default function DungeonCrawler() {
 			checkForExistingSaves();
 		}
 	}, [gameEngine, hasCheckedForSaves]);
+
+	// Load model preference from localStorage
+	useEffect(() => {
+		const savedModelId = localStorage.getItem('dungeonCrawler_selectedModel') as ModelId;
+		if (savedModelId && (savedModelId === 'tinyllama-1.1b' || savedModelId === 'qwen-0.5b')) {
+			setSelectedModelId(savedModelId);
+		}
+	}, []);
 
 	const handleCharacterCreated = async (character: Character) => {
 		setIsLoading(true);
@@ -109,14 +120,31 @@ export default function DungeonCrawler() {
 		return <div>Failed to load game</div>;
 	}
 
+	const handleModelChange = async (modelId: ModelId) => {
+		setIsModelLoading(true);
+		try {
+			await gameEngine.switchModel(modelId);
+			setSelectedModelId(modelId);
+			// Store preference in localStorage
+			localStorage.setItem('dungeonCrawler_selectedModel', modelId);
+		} catch (error) {
+			console.error('Failed to switch model:', error);
+		} finally {
+			setIsModelLoading(false);
+		}
+	};
+
 	return (
 		<GameUI
 			gameState={gameState}
 			gameEngine={gameEngine}
+			selectedModelId={selectedModelId}
+			isModelLoading={isModelLoading}
 			onCommand={handleCommand}
 			onCombatAction={handleCombatAction}
 			onCastSpell={handleCastSpell}
 			onGameStateChange={setGameState}
+			onModelChange={handleModelChange}
 		/>
 	);
 }
