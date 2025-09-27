@@ -16,6 +16,7 @@ import { AutoSaveService } from '../services/AutoSaveService';
 import { RandomGenerator } from '../utils/RandomGenerator';
 import { getExperienceToNextLevel } from '../utils/gameUtils';
 import type { SaveOperation, LoadOperation, SaveSlot } from '../models/SaveData';
+import { LLMNarrator } from './LLMNarrator';
 
 export class GameEngine {
 	private dungeonGenerator: DungeonGenerator;
@@ -28,6 +29,7 @@ export class GameEngine {
 	private saveSystem: SaveSystem;
 	private autoSaveService: AutoSaveService;
 	private rng: RandomGenerator;
+	private llmNarrator: LLMNarrator;
 
 	constructor() {
 		this.rng = new RandomGenerator();
@@ -40,6 +42,7 @@ export class GameEngine {
 		this.statusEffectSystem = new StatusEffectSystem();
 		this.saveSystem = new SaveSystem();
 		this.autoSaveService = new AutoSaveService(this.saveSystem);
+		this.llmNarrator = new LLMNarrator();
 	}
 
 	getMagicSystem(): MagicSystem {
@@ -516,8 +519,14 @@ export class GameEngine {
 			return;
 		}
 
-		// Basic room description
-		let description = this.getBasicRoomDescription(currentRoom);
+		// Generate LLM-based room description
+		let description: string;
+		try {
+			description = await this.llmNarrator.describeRoom(currentRoom, gameState);
+		} catch (error) {
+			console.error('LLM description failed:', error);
+			description = "You find yourself in a mysterious location, though the details are unclear.";
+		}
 
 		// Add details about exits and locked doors
 		const exits = Array.from(currentRoom.exits.keys());
@@ -591,71 +600,6 @@ export class GameEngine {
 		}
 	}
 
-	private getBasicRoomDescription(room: any): string {
-		let description = '';
-
-		switch (room.roomType) {
-			case 'entrance':
-				description = "You stand at the entrance to the dungeon. Ancient stone walls stretch into darkness ahead.";
-				break;
-			case 'corridor':
-				description = "You are in a narrow stone corridor. Torchlight flickers against the damp walls.";
-				break;
-			case 'chamber':
-				description = "You enter a large chamber with high vaulted ceilings. Shadows dance in the corners.";
-				break;
-			case 'armory':
-				description = "This appears to be an old armory. Weapon racks line the walls, though most are empty.";
-				break;
-			case 'library':
-				description = "You are in what was once a library. Dusty tomes and scrolls are scattered about.";
-				break;
-			case 'throne_room':
-				description = "A grand throne room stretches before you. An ornate throne sits upon a raised dais.";
-				break;
-			case 'treasure_room':
-				description = "This room glitters with the promise of treasure. Gold coins are scattered on the floor.";
-				break;
-			default:
-				description = "You are in a stone room. The walls are rough-hewn and ancient.";
-		}
-
-		// Add environmental hazard descriptions
-		if (room.hazards && room.hazards.length > 0) {
-			const hazardDescriptions = room.hazards.map((hazard: any) => {
-				switch (hazard.type) {
-					case 'poison_gas':
-						return 'A sickly green mist hangs in the air.';
-					case 'extreme_cold':
-						return 'Your breath mists in the frigid air.';
-					case 'magical_darkness':
-						return 'Unnatural shadows seem to writhe and move.';
-					case 'unstable_floor':
-						return 'The floor creaks ominously underfoot.';
-					default:
-						return hazard.description;
-				}
-			});
-			description += ` ${hazardDescriptions.join(' ')}`;
-		}
-
-		// Add interactive element descriptions
-		if (room.interactiveElements && room.interactiveElements.length > 0) {
-			const elementDescriptions = room.interactiveElements.map((element: any) => {
-				if (element.type === 'lever') {
-					return element.activated ? 'A lever sits in the pulled position.' : 'A lever protrudes from the wall.';
-				} else if (element.type === 'altar') {
-					return 'An ancient altar stands in the center of the room.';
-				} else if (element.type === 'fountain') {
-					return 'A stone fountain bubbles quietly.';
-				}
-				return element.description;
-			});
-			description += ` ${elementDescriptions.join(' ')}`;
-		}
-
-		return description;
-	}
 
 	private createGameStateCopy(gameState: GameState): GameState {
 		return {

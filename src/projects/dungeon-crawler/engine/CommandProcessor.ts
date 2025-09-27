@@ -152,11 +152,11 @@ export class CommandProcessor {
 		switch (command.action) {
 			// Movement commands
 			case ActionType.MOVE:
-				return this.movementProcessor.executeMove(command.direction!, gameState);
+				return await this.movementProcessor.executeMove(command.direction!, gameState);
 
 			// Interaction commands
 			case ActionType.LOOK:
-				return this.interactionProcessor.executeLook(gameState);
+				return await this.interactionProcessor.executeLook(gameState);
 			case ActionType.SEARCH:
 				return this.interactionProcessor.executeSearch(gameState);
 			case ActionType.EXAMINE:

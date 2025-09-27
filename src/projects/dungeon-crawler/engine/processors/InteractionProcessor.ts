@@ -4,6 +4,7 @@ import { ItemType } from '../../models/Character';
 import type { CommandResult } from '../CommandProcessor';
 import { InteractionSystem } from '../InteractionSystem';
 import { InteractiveElementSystem } from '../InteractiveElementSystem';
+import { LLMNarrator } from '../LLMNarrator';
 
 /**
  * Handles room interaction commands (traps, puzzles, environmental elements)
@@ -11,16 +12,18 @@ import { InteractiveElementSystem } from '../InteractiveElementSystem';
 export class InteractionProcessor {
 	private interactionSystem: InteractionSystem;
 	private interactiveElementSystem: InteractiveElementSystem;
+	private llmNarrator: LLMNarrator;
 
 	constructor() {
 		this.interactionSystem = new InteractionSystem();
 		this.interactiveElementSystem = new InteractiveElementSystem();
+		this.llmNarrator = new LLMNarrator();
 	}
 
 	/**
 	 * Look around the current room
 	 */
-	executeLook(gameState: GameState): CommandResult {
+	async executeLook(gameState: GameState): Promise<CommandResult> {
 		const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
 		if (!currentRoom) {
 			return {
@@ -30,7 +33,13 @@ export class InteractionProcessor {
 			};
 		}
 
-		let description = currentRoom.description.generatedDescription || currentRoom.description.template;
+		let description: string;
+		try {
+			description = await this.llmNarrator.describeRoom(currentRoom, gameState);
+		} catch (error) {
+			console.error('LLM description failed:', error);
+			description = "You find yourself in a mysterious location, though the details are unclear.";
+		}
 
 		// Add room details
 		const exits = Array.from(currentRoom.exits.keys()).map(d => d.toLowerCase()).join(', ');

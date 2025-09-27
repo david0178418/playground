@@ -1,2 +1,12 @@
 [serve.static]
 env = "PUBLIC_*"
+
+[bundle]
+# Polyfill Node.js modules for browser compatibility
+external = ["fs", "path", "url"]
+
+[define]
+# Define globals for Node.js polyfills
+"import_fs" = "undefined"
+"import_path" = "undefined"
+"import_url" = "undefined"
