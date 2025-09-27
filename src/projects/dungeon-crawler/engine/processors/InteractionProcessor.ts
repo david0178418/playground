@@ -14,10 +14,10 @@ export class InteractionProcessor {
 	private interactiveElementSystem: InteractiveElementSystem;
 	private llmNarrator: LLMNarrator;
 
-	constructor() {
+	constructor(llmNarrator: LLMNarrator) {
 		this.interactionSystem = new InteractionSystem();
 		this.interactiveElementSystem = new InteractiveElementSystem();
-		this.llmNarrator = new LLMNarrator();
+		this.llmNarrator = llmNarrator;
 	}
 
 	/**

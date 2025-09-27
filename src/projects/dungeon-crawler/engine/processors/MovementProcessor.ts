@@ -10,8 +10,8 @@ import { LLMNarrator } from '../LLMNarrator';
 export class MovementProcessor {
 	private llmNarrator: LLMNarrator;
 
-	constructor() {
-		this.llmNarrator = new LLMNarrator();
+	constructor(llmNarrator: LLMNarrator) {
+		this.llmNarrator = llmNarrator;
 	}
 	/**
 	 * Check if a command is a direction command

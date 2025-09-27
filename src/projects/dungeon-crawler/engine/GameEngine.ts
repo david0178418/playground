@@ -34,7 +34,6 @@ export class GameEngine {
 	constructor() {
 		this.rng = new RandomGenerator();
 		this.dungeonGenerator = new DungeonGenerator(this.rng);
-		this.commandProcessor = new CommandProcessor();
 		this.combatSystem = new CombatSystem();
 		this.magicSystem = new MagicSystem();
 		this.interactionSystem = new InteractionSystem();
@@ -43,6 +42,7 @@ export class GameEngine {
 		this.saveSystem = new SaveSystem();
 		this.autoSaveService = new AutoSaveService(this.saveSystem);
 		this.llmNarrator = new LLMNarrator();
+		this.commandProcessor = new CommandProcessor(this.llmNarrator);
 	}
 
 	getMagicSystem(): MagicSystem {

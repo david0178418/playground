@@ -54,11 +54,26 @@ export default function DungeonCrawler() {
 
 	// Load model preference from localStorage
 	useEffect(() => {
-		const savedModelId = localStorage.getItem('dungeonCrawler_selectedModel') as ModelId;
-		if (savedModelId && (savedModelId === 'tinyllama-1.1b' || savedModelId === 'qwen-0.5b')) {
-			setSelectedModelId(savedModelId);
-		}
-	}, []);
+		const initializeModel = async () => {
+			const savedModelId = localStorage.getItem('dungeonCrawler_selectedModel') as ModelId;
+			const validModels = ['tinyllama-1.1b', 'gemma-3-1b', 'gemma-2-2b', 'qwen-0.5b'];
+			if (savedModelId && validModels.includes(savedModelId)) {
+				console.log(`🎮 Game: Loaded saved model preference: ${savedModelId}`);
+				setSelectedModelId(savedModelId);
+				// Also switch the GameEngine's model
+				try {
+					await gameEngine.switchModel(savedModelId);
+					console.log(`🎮 Game: GameEngine initialized with saved model: ${savedModelId}`);
+				} catch (error) {
+					console.error(`🎮 Game: Failed to initialize GameEngine with saved model:`, error);
+				}
+			} else {
+				console.log(`🎮 Game: No saved model preference found, using default: tinyllama-1.1b`);
+			}
+		};
+
+		initializeModel();
+	}, [gameEngine]);
 
 	const handleCharacterCreated = async (character: Character) => {
 		setIsLoading(true);
@@ -121,14 +136,16 @@ export default function DungeonCrawler() {
 	}
 
 	const handleModelChange = async (modelId: ModelId) => {
+		console.log(`🎮 Game: User requested model change to ${modelId}`);
 		setIsModelLoading(true);
 		try {
 			await gameEngine.switchModel(modelId);
 			setSelectedModelId(modelId);
 			// Store preference in localStorage
 			localStorage.setItem('dungeonCrawler_selectedModel', modelId);
+			console.log(`🎮 Game: Model change successful - UI updated to ${modelId}`);
 		} catch (error) {
-			console.error('Failed to switch model:', error);
+			console.error('🎮 Game: Failed to switch model:', error);
 		} finally {
 			setIsModelLoading(false);
 		}

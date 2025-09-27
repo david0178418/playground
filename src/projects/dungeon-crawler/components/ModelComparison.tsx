@@ -146,9 +146,9 @@ export function ModelComparison({ open, onClose, currentRoom, gameState }: Model
 							</Box>
 
 							{results.length > 0 && (
-								<Grid container spacing={3}>
+								<Grid container spacing={2}>
 									{results.map((result) => (
-										<Grid size={{ xs: 12, md: 6 }} key={result.modelId}>
+										<Grid size={{ xs: 12, sm: 6, lg: 3 }} key={result.modelId}>
 											<Paper
 												sx={{
 													p: 3,
