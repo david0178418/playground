@@ -2,17 +2,11 @@ import { Direction } from '../../models/Command';
 import type { GameState } from '../../models/Room';
 import { MessageType } from '../../models/Room';
 import type { CommandResult } from '../CommandProcessor';
-import { LLMNarrator } from '../LLMNarrator';
 
 /**
  * Handles movement-related commands
  */
 export class MovementProcessor {
-	private llmNarrator: LLMNarrator;
-
-	constructor() {
-		this.llmNarrator = new LLMNarrator();
-	}
 	/**
 	 * Check if a command is a direction command
 	 */
@@ -66,7 +60,7 @@ export class MovementProcessor {
 	/**
 	 * Execute movement command
 	 */
-	async executeMove(direction: Direction, gameState: GameState): Promise<CommandResult> {
+	executeMove(direction: Direction, gameState: GameState): CommandResult {
 		const currentRoom = gameState.dungeon.rooms.get(gameState.currentRoomId);
 		if (!currentRoom) {
 			return {
@@ -114,19 +108,13 @@ export class MovementProcessor {
 		targetRoom.visited = true;
 		gameState.turnCount++;
 
-		// Get room description from LLM
+		// Get room description
 		const directionName = this.getDirectionName(direction);
-		let description: string;
-		try {
-			description = await this.llmNarrator.describeRoom(targetRoom, gameState);
-		} catch (error) {
-			console.error('LLM description failed:', error);
-			description = "You find yourself in a mysterious location, though the details are unclear.";
-		}
+		let description = targetRoom.description.generatedDescription || targetRoom.description.template;
 
 		// Add exit information
 		const availableExits = Array.from(targetRoom.exits.keys()).map(d => d.toLowerCase()).join(', ');
-		const exitInfo = availableExits ? ` Exits: ${availableExits}.` : ' There are no visible exits.';
+		const exitInfo = availableExits ? `Exits: ${availableExits}.` : 'There are no visible exits.';
 
 		// Add enemy information
 		let enemyInfo = '';
@@ -144,7 +132,7 @@ export class MovementProcessor {
 
 		return {
 			success: true,
-			message: `You go ${directionName}. ${description}${exitInfo}${enemyInfo}${itemInfo}`,
+			message: `You go ${directionName}. ${description} ${exitInfo}${enemyInfo}${itemInfo}`,
 			messageType: MessageType.ACTION
 		};
 	}

@@ -118,7 +118,7 @@ export class DungeonGenerator {
 			exits: new Map<Direction, string>(),
 			roomType,
 			description: {
-				template: roomType // Just store the room type, LLM will generate description
+				template: this.getRoomTemplate(roomType)
 			},
 			contents: {
 				enemies: [],
@@ -130,6 +130,26 @@ export class DungeonGenerator {
 		};
 	}
 
+	private getRoomTemplate(roomType: RoomType): string {
+		switch (roomType) {
+			case RoomType.ENTRANCE:
+				return "dungeon_entrance";
+			case RoomType.CORRIDOR:
+				return "narrow_corridor";
+			case RoomType.CHAMBER:
+				return "stone_chamber";
+			case RoomType.ARMORY:
+				return "old_armory";
+			case RoomType.LIBRARY:
+				return "ancient_library";
+			case RoomType.THRONE_ROOM:
+				return "grand_throne_room";
+			case RoomType.TREASURE_ROOM:
+				return "treasure_chamber";
+			default:
+				return "generic_room";
+		}
+	}
 
 	private selectSpecialRoomType(): RoomType {
 		const specialRooms = [
