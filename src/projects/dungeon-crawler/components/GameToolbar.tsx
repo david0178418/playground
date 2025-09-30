@@ -6,50 +6,27 @@ import {
 	Help as HelpIcon
 } from '@mui/icons-material';
 import type { GameEngine } from '../engine/GameEngine';
-import { ModelSelector } from './ModelSelector';
-import type { ModelId } from '../engine/LLMNarrator';
 
 interface GameToolbarProps {
 	gameEngine?: GameEngine;
 	hasMana: boolean;
-	selectedModelId: ModelId;
-	isModelLoading?: boolean;
-	onModelChange?: (modelId: ModelId) => void;
 	onShowSpellBook?: () => void;
 	onShowSave?: () => void;
 	onShowLoad?: () => void;
 	onShowShortcutsHelp?: () => void;
-	onShowModelComparison?: () => void;
 }
 
 export function GameToolbar({
 	gameEngine,
 	hasMana,
-	selectedModelId,
-	isModelLoading,
-	onModelChange,
 	onShowSpellBook,
 	onShowSave,
 	onShowLoad,
-	onShowShortcutsHelp,
-	onShowModelComparison
+	onShowShortcutsHelp
 }: GameToolbarProps) {
 	return (
 		<Box sx={{ mb: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
-			<Stack direction="row" spacing={2} justifyContent="space-between" alignItems="center">
-				{/* Model Selector */}
-				{onModelChange && (
-					<ModelSelector
-						selectedModelId={selectedModelId}
-						onModelChange={onModelChange}
-						isLoading={isModelLoading}
-						onShowComparison={onShowModelComparison}
-						compact
-					/>
-				)}
-
-				{/* Action Buttons */}
-				<Stack direction="row" spacing={2}>
+			<Stack direction="row" spacing={2} justifyContent="center">
 				{/* Spell Book */}
 				{hasMana && onShowSpellBook && (
 					<Button
@@ -96,7 +73,6 @@ export function GameToolbar({
 					Help
 				</Button>
 			</Stack>
-		</Stack>
 		</Box>
 	);
 }

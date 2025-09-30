@@ -16,7 +16,7 @@ import { AutoSaveService } from '../services/AutoSaveService';
 import { RandomGenerator } from '../utils/RandomGenerator';
 import { getExperienceToNextLevel } from '../utils/gameUtils';
 import type { SaveOperation, LoadOperation, SaveSlot } from '../models/SaveData';
-import { LLMNarrator, type ModelId, type ModelConfig } from './LLMNarrator';
+import { LLMNarrator } from './LLMNarrator';
 
 export class GameEngine {
 	private dungeonGenerator: DungeonGenerator;
@@ -47,19 +47,6 @@ export class GameEngine {
 
 	getMagicSystem(): MagicSystem {
 		return this.magicSystem;
-	}
-
-	// Model management methods
-	getCurrentModelId(): ModelId | null {
-		return this.llmNarrator.getCurrentModelId();
-	}
-
-	getAvailableModels(): ModelConfig[] {
-		return LLMNarrator.getAvailableModels();
-	}
-
-	async switchModel(modelId: ModelId): Promise<void> {
-		await this.llmNarrator.switchModel(modelId);
 	}
 
 	// Save/Load System Methods
