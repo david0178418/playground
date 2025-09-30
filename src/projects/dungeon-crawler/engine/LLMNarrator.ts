@@ -31,22 +31,6 @@ const AVAILABLE_MODELS: ModelConfig[] = [
 		performanceLevel: 'quality'
 	},
 	{
-		id: 'gemma-3-1b',
-		name: 'Gemma 3 1B IT',
-		modelPath: 'onnx-community/gemma-3-1b-it-ONNX',
-		parameters: '1B',
-		description: 'Google\'s latest Gemma 3 model for instruction following',
-		performanceLevel: 'quality'
-	},
-	{
-		id: 'gemma-2-2b',
-		name: 'Gemma 2 2B IT',
-		modelPath: 'onnx-community/gemma-2-2b-it-ONNX',
-		parameters: '2B',
-		description: 'Google\'s Gemma 2 2B instruction-tuned model with better quality',
-		performanceLevel: 'quality'
-	},
-	{
 		id: 'qwen-0.5b',
 		name: 'Qwen2.5 0.5B',
 		modelPath: 'onnx-community/Qwen2.5-0.5B-Instruct',
@@ -88,27 +72,16 @@ export class LLMNarrator {
 
 	async initialize(modelId: ModelId = 'tinyllama-1.1b'): Promise<void> {
 		// If already initialized with the same model, return
-		if (this.isInitialized && this.currentModelId === modelId) {
-			console.log(`✅ LLM: Already initialized with ${modelId}`);
-			return;
-		}
+		if (this.isInitialized && this.currentModelId === modelId) return;
 
 		// If switching models, reset initialization
 		if (this.currentModelId !== modelId) {
-			if (this.currentModelId) {
-				console.log(`🔄 LLM: Switching from ${this.currentModelId} to ${modelId}`);
-			} else {
-				console.log(`🚀 LLM: First-time initialization with ${modelId}`);
-			}
 			this.isInitialized = false;
 			this.initializationPromise = null;
 			this.generator = null;
 		}
 
-		if (this.initializationPromise) {
-			console.log(`⏳ LLM: Waiting for ongoing ${modelId} initialization...`);
-			return this.initializationPromise;
-		}
+		if (this.initializationPromise) return this.initializationPromise;
 
 		this.initializationPromise = this.performInitialization(modelId);
 		await this.initializationPromise;
@@ -125,43 +98,28 @@ export class LLMNarrator {
 			throw new Error(`Unknown model ID: ${modelId}`);
 		}
 
-		console.log(`📦 LLM: Loading ${modelConfig.name} (${modelConfig.parameters}) from ${modelConfig.modelPath}`);
-		console.log(`⚡ LLM: Performance profile: ${modelConfig.performanceLevel}`);
+		// Import official Hugging Face transformers library
+		const { pipeline } = await import('@huggingface/transformers');
 
-		try {
-			// Import official Hugging Face transformers library
-			console.log(`📚 LLM: Importing transformers library...`);
-			const { pipeline } = await import('@huggingface/transformers');
+		// Initialize the pipeline with the selected model
+		const generatorPipeline = await pipeline('text-generation', modelConfig.modelPath, {
+			device: 'wasm'
+		});
 
-			// Initialize the pipeline with the selected model
-			console.log(`🔧 LLM: Creating pipeline for ${modelConfig.name}...`);
-			const startTime = performance.now();
-			const generatorPipeline = await pipeline('text-generation', modelConfig.modelPath, {
-				device: 'wasm'
-			});
-			const loadTime = Math.round(performance.now() - startTime);
-
-			// Type guard to ensure we have a working generator
-			if (typeof generatorPipeline !== 'function') {
-				throw new Error('Failed to create text generation pipeline');
-			}
-
-			this.generator = generatorPipeline as TextGenerator;
-			this.currentModelId = modelId;
-			this.isInitialized = true;
-
-			console.log(`🎉 LLM: Successfully loaded ${modelConfig.name} in ${loadTime}ms`);
-		} catch (error) {
-			console.error(`❌ LLM: Failed to load ${modelConfig.name}:`, error);
-			throw error;
+		// Type guard to ensure we have a working generator
+		if (typeof generatorPipeline !== 'function') {
+			throw new Error('Failed to create text generation pipeline');
 		}
+
+		this.generator = generatorPipeline as TextGenerator;
+		this.currentModelId = modelId;
+		this.isInitialized = true;
 	}
 
 	async describeRoom(room: Room, gameState: GameState, modelId?: ModelId): Promise<string> {
 		const targetModelId = modelId || this.currentModelId || 'tinyllama-1.1b';
 		await this.initialize(targetModelId);
 
-		const modelConfig = LLMNarrator.getModelConfig(targetModelId);
 		const context = this.extractRoomContext(room);
 		const prompt = this.buildRoomPrompt(context, gameState);
 
@@ -169,48 +127,29 @@ export class LLMNarrator {
 			throw new Error('LLM generator not initialized');
 		}
 
-		console.log(`💭 LLM: Generating room description using ${modelConfig?.name} (${targetModelId})`);
-		const startTime = performance.now();
+		// Generate text using the pipeline
+		const result = await this.generator(prompt, {
+			max_new_tokens: 150,
+			temperature: 0.7,
+			do_sample: true,
+			top_p: 0.9,
+			repetition_penalty: 1.1
+		});
 
-		try {
-			// Generate text using the pipeline
-			const result = await this.generator(prompt, {
-				max_new_tokens: 150,
-				temperature: 0.7,
-				do_sample: true,
-				top_p: 0.9,
-				repetition_penalty: 1.1
-			});
+		// Handle result format
+		const generatedText = Array.isArray(result) && result.length > 0 && result[0]
+			? result[0].generated_text
+			: '';
 
-			const generationTime = Math.round(performance.now() - startTime);
-
-			// Handle result format
-			const generatedText = Array.isArray(result) && result.length > 0 && result[0]
-				? result[0].generated_text
-				: '';
-
-			if (!generatedText) {
-				throw new Error('LLM failed to generate description');
-			}
-
-			const cleanedText = this.cleanGeneratedText(generatedText, prompt);
-			console.log(`✨ LLM: Generated description in ${generationTime}ms: "${cleanedText.substring(0, 50)}..."`);
-			return cleanedText;
-		} catch (error) {
-			const generationTime = Math.round(performance.now() - startTime);
-			console.error(`❌ LLM: Generation failed after ${generationTime}ms:`, error);
-			throw error;
+		if (!generatedText) {
+			throw new Error('LLM failed to generate description');
 		}
+
+		return this.cleanGeneratedText(generatedText, prompt);
 	}
 
 	async switchModel(modelId: ModelId): Promise<void> {
-		if (this.currentModelId === modelId) {
-			console.log(`🔄 LLM: Model switch requested but already using ${modelId}`);
-			return;
-		}
-
-		const fromModel = this.currentModelId;
-		console.log(`🔄 LLM: Switching model from ${fromModel || 'none'} to ${modelId}...`);
+		if (this.currentModelId === modelId) return;
 
 		// Reset current state
 		this.isInitialized = false;
@@ -220,7 +159,6 @@ export class LLMNarrator {
 
 		// Initialize with new model
 		await this.initialize(modelId);
-		console.log(`✅ LLM: Model switch complete - now using ${modelId}`);
 	}
 
 	private extractRoomContext(room: Room): RoomContext {

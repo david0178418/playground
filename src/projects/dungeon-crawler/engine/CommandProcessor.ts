@@ -6,7 +6,6 @@ import { MovementProcessor } from './processors/MovementProcessor';
 import { InventoryProcessor } from './processors/InventoryProcessor';
 import { CombatProcessor } from './processors/CombatProcessor';
 import { InteractionProcessor } from './processors/InteractionProcessor';
-import type { LLMNarrator } from './LLMNarrator';
 
 export interface CommandResult {
 	success: boolean;
@@ -23,11 +22,11 @@ export class CommandProcessor {
 	private combatProcessor: CombatProcessor;
 	private interactionProcessor: InteractionProcessor;
 
-	constructor(llmNarrator: LLMNarrator) {
-		this.movementProcessor = new MovementProcessor(llmNarrator);
+	constructor() {
+		this.movementProcessor = new MovementProcessor();
 		this.inventoryProcessor = new InventoryProcessor();
 		this.combatProcessor = new CombatProcessor();
-		this.interactionProcessor = new InteractionProcessor(llmNarrator);
+		this.interactionProcessor = new InteractionProcessor();
 	}
 
 	parseCommand(input: string): Command {
