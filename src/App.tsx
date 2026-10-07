@@ -21,6 +21,11 @@ export default function App() {
 						Dungeon Crawler Game
 					</ListItemText>
 				</ListItem>
+				<ListItem component={Link} to="/frontline">
+					<ListItemText>
+						Frontline
+					</ListItemText>
+				</ListItem>
 			</List>
 		</Container>
 	);
