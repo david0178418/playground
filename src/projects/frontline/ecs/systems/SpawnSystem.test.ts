@@ -22,7 +22,7 @@ describe('opponent packs grow toward the goal', () => {
           ecs.setResource('spawnAheadAccumulator', 4);
           ecs.update(0);
           const enemies = ecs.getEntitiesWithQuery(['enemy']);
-          const expectedHp = { 1: 60, 2: 75, 3: 90 }[waveId];
+          const expectedHp = { 1: 120, 2: 150, 3: 180 }[waveId];
           for (const enemy of enemies) {
             expect(enemy.components.health).toEqual({ current: expectedHp, max: expectedHp });
             expect(enemy.components.enemy.hp).toBe(expectedHp);
