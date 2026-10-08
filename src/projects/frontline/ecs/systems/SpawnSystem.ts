@@ -1,4 +1,4 @@
-import { CORRIDOR, ENEMY, SPAWN } from '../../config';
+import { CORRIDOR, DOOR, ENEMY, SPAWN } from '../../config';
 import { waveDef } from '../../data/waves';
 import { createEnemy } from '../entities';
 import type { GameSystemRegistrar } from '../Engine';
@@ -43,11 +43,17 @@ export function addSpawnSystem(systems: GameSystemRegistrar): void {
 
       let acc = resources.spawnAheadAccumulator + dt;
       const px = player.components.position.x;
+      const frontX = Math.max(resources.frontX, px);
+      const goalProgress = Math.max(0, Math.min(1, frontX / DOOR.X));
+      const packGrowth = Math.round(goalProgress * SPAWN.PACK_GROWTH_AT_GOAL);
       const hpScale = 1 + (resources.waveId - 1) * 0.25;
 
       while (acc >= interval) {
         acc -= interval;
-        const n = packCount(SPAWN.AHEAD_PACK_MIN, SPAWN.AHEAD_PACK_MAX + resources.waveId - 1);
+        const n = packCount(
+          SPAWN.AHEAD_PACK_MIN + packGrowth,
+          SPAWN.AHEAD_PACK_MAX + resources.waveId - 1 + packGrowth,
+        );
         for (let i = 0; i < n; i++) {
           const x = px + rand(ENEMY.AHEAD_MIN, ENEMY.AHEAD_MAX);
           const y = rand(CORRIDOR.EDGE_PAD + 30, CORRIDOR.HEIGHT - CORRIDOR.EDGE_PAD - 30);
@@ -58,7 +64,8 @@ export function addSpawnSystem(systems: GameSystemRegistrar): void {
 
       // Rear chase wave of regular units from the left (survivable, punishing)
       if (t >= resources.rearNextAt) {
-        const pack = wave.rearPackSize + (resources.waveId - 1) * SPAWN.REAR_PACK_SIZE_WAVE_SCALE;
+        const pack = wave.rearPackSize +
+          (resources.waveId - 1) * SPAWN.REAR_PACK_SIZE_WAVE_SCALE + packGrowth;
         for (let i = 0; i < pack; i++) {
           const x = Math.max(
             CORRIDOR.LEFT_WALL + 20,

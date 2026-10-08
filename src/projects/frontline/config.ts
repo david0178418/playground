@@ -70,6 +70,8 @@ export const SPAWN = {
   AHEAD_INTERVAL_END: 1.2,
   AHEAD_PACK_MIN: 1,
   AHEAD_PACK_MAX: 3,
+  /** Extra opponents per pack as the front advances toward the exit. */
+  PACK_GROWTH_AT_GOAL: 4,
   /** Rear chase schedule */
   REAR_FIRST_AT_SEC: 50,
   REAR_INTERVAL: 30,
