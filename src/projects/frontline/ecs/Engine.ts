@@ -70,16 +70,17 @@ const onVisibilityChange = (): void => {
 };
 
 export async function initializeEngine(): Promise<void> {
+  await gameEngine.dispose();
   gameEngine = createGameEngine();
   await gameEngine.initialize();
 }
 
 /** Stop the loop, remove listeners, and uninstall plugins (input listeners). */
-export function stopGameLoop(): void {
+export function stopGameLoop(): Promise<void> {
   gameRunning = false;
   cancelAnimationFrame(frameHandle);
   document.removeEventListener('visibilitychange', onVisibilityChange);
-  gameEngine.dispose();
+  return gameEngine.dispose();
 }
 
 export function startGameLoop(): void {

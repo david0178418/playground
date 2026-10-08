@@ -6,7 +6,7 @@ import './style.css';
 
 // The engine is a module singleton; serialize mount/unmount so StrictMode's
 // double-mount (or fast navigation) never overlaps two game instances.
-let lifecycle: Promise<unknown> = Promise.resolve();
+let lifecycle: Promise<void> = Promise.resolve();
 
 export default function Frontline() {
 	const rootRef = useRef<HTMLDivElement>(null);
@@ -16,7 +16,7 @@ export default function Frontline() {
 		const root = rootRef.current;
 		if (!root) return;
 		let disposed = false;
-		let teardown: (() => void) | null = null;
+		let teardown: (() => Promise<void>) | null = null;
 
 		lifecycle = lifecycle
 			.then(async () => {
@@ -29,9 +29,12 @@ export default function Frontline() {
 
 		return () => {
 			disposed = true;
-			lifecycle = lifecycle.then(() => {
-				teardown?.();
+			lifecycle = lifecycle.then(async () => {
+				const cleanup = teardown;
 				teardown = null;
+				await cleanup?.();
+			}).catch(error => {
+				console.error('Failed to stop Frontline:', error);
 			});
 		};
 	}, []);

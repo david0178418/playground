@@ -12,7 +12,7 @@ import { resizeCanvas } from '../render/canvasRenderer';
 import { restartRun } from './waveLifecycle';
 import { attachTouchControls } from '../ui/touchControls';
 
-export async function initializeGame(root: ParentNode = document): Promise<() => void> {
+export async function initializeGame(root: ParentNode = document): Promise<() => Promise<void>> {
   const canvas = root.querySelector<HTMLCanvasElement>('#game-canvas');
   const hud = root.querySelector<HTMLElement>('#hud');
   const overlay = root.querySelector<HTMLElement>('#overlay');
@@ -57,8 +57,8 @@ export async function initializeGame(root: ParentNode = document): Promise<() =>
   restartRun(gameEngine);
   const detachTouchControls = attachTouchControls(root, gameEngine);
   startGameLoop();
-  return () => {
+  return async () => {
     detachTouchControls();
-    stopGameLoop();
+    await stopGameLoop();
   };
 }

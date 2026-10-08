@@ -38,7 +38,7 @@ describe('opponent packs grow toward the goal', () => {
           };
         } finally {
           randomSpy.mockRestore();
-          ecs.dispose();
+          await ecs.dispose();
         }
       };
 
@@ -71,7 +71,7 @@ describe('opponent packs grow toward the goal', () => {
       expect(count).toBeGreaterThanOrEqual(1);
       expect(count).toBeLessThanOrEqual(3);
     } finally {
-      ecs.dispose();
+      await ecs.dispose();
     }
   });
 });

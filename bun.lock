@@ -9,7 +9,7 @@
         "@emotion/styled": "^11.14.1",
         "@mui/icons-material": "^7.3.2",
         "@mui/material": "^7.3.2",
-        "ecspresso": "^0.22.0",
+        "ecspresso": "^0.24.1",
         "lit-html": "^3.3.3",
         "react": "^19.1.1",
         "react-dom": "^19.1.1",
@@ -134,7 +134,7 @@
 
     "dom-helpers": ["dom-helpers@5.2.1", "", { "dependencies": { "@babel/runtime": "^7.8.7", "csstype": "^3.0.2" } }, "sha512-nRCa7CK3VTrM2NmGkIy4cbK7IZlgBE/PYMn55rrXefr5xXDP0LdtfPnblFDoVdcAfslJ7or6iqAUnx0CCGIWQA=="],
 
-    "ecspresso": ["ecspresso@0.22.0", "", { "peerDependencies": { "howler": "^2.2.0", "pixi.js": "^8.0.0", "react": "^19.0.0", "three": "^0.184.0" }, "optionalPeers": ["howler", "pixi.js", "react", "three"] }, "sha512-ablHrG1Gk7Y3lbgfCYnBdcolUG1NCst4/joqUWRWSIBhzB5abn7ktAdPVqZbm2bnZ9cPEijgS54cyj0L2ir2OA=="],
+    "ecspresso": ["ecspresso@0.24.1", "", { "peerDependencies": { "howler": "^2.2.0", "pixi.js": "^8.0.0", "react": "^19.0.0", "three": "^0.184.0" }, "optionalPeers": ["howler", "pixi.js", "react", "three"] }, "sha512-TQejX8u05rN31TYlqrAhVe2OktJoQ3hlblXkvWXjgISGV2j+BkI3fMnJMkEr4asa+0lR6N+Ltux3YUzSMk/huA=="],
 
     "error-ex": ["error-ex@1.3.2", "", { "dependencies": { "is-arrayish": "^0.2.1" } }, "sha512-7dFHNmqeFSEt2ZBsCriorKnn3Z2pj+fd9kmI6QoWw4//DL+icEBfc0U7qJCisqrTsKTjw4fNFy2pW9OqStD84g=="],
 
