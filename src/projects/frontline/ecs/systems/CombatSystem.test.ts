@@ -42,7 +42,7 @@ describe('automatic gun tuning', () => {
         }
       } finally {
         randomSpy.mockRestore();
-        ecs.dispose();
+        await ecs.dispose();
       }
     });
   }
@@ -69,7 +69,7 @@ describe('automatic gun tuning', () => {
       expect(ecs.getEntitiesWithQuery(['projectile'])).toHaveLength(1);
     } finally {
       randomSpy.mockRestore();
-      ecs.dispose();
+      await ecs.dispose();
     }
   });
 });
