@@ -10,6 +10,7 @@ import { addCameraSystem } from './systems/CameraSystem';
 import { addRenderSystem, initRenderTargets } from './systems/RenderSystem';
 import { resizeCanvas } from '../render/canvasRenderer';
 import { restartRun } from './waveLifecycle';
+import { attachTouchControls } from '../ui/touchControls';
 
 export async function initializeGame(root: ParentNode = document): Promise<() => void> {
   const canvas = root.querySelector<HTMLCanvasElement>('#game-canvas');
@@ -54,6 +55,10 @@ export async function initializeGame(root: ParentNode = document): Promise<() =>
 
   await gameEngine.pushScreen('playing', { fresh: true });
   restartRun(gameEngine);
+  const detachTouchControls = attachTouchControls(root, gameEngine);
   startGameLoop();
-  return stopGameLoop;
+  return () => {
+    detachTouchControls();
+    stopGameLoop();
+  };
 }

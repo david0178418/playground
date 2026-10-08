@@ -28,6 +28,8 @@ export function createGameEngine() {
   .withPlugin(timerPlugin)
   .withComponentTypes<Components>()
   .withResourceTypes<Resources>()
+  .withResource('touchMovement', { x: 0, y: 0 })
+  .withResource('viewportPaused', false)
   .withResource('phase', 'playing' as Resources['phase'])
   .withResource('waveId', 1 as Resources['waveId'])
   .withResource('waveElapsed', 0)
@@ -92,7 +94,9 @@ function gameLoop(currentTime: number): void {
   if (!gameRunning) return;
   const deltaTime = document.hidden ? 0 : Math.min(0.05, (currentTime - lastFrameTime) / 1000);
   lastFrameTime = currentTime;
-  gameEngine.update(deltaTime);
+  if (!document.hidden && !gameEngine.getResource('viewportPaused')) {
+    gameEngine.update(deltaTime);
+  }
   frameHandle = requestAnimationFrame(gameLoop);
 }
 

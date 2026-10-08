@@ -18,6 +18,7 @@ export default function RouteMap() {
 					index
 					element={<App />}
 				/>
+				<Route path="frontline" element={<Frontline />} />
 				<Route element={<ProjectLayout />}>
 					<Route
 						path="foo"
@@ -30,10 +31,6 @@ export default function RouteMap() {
 					<Route
 						path="dungeon-crawler"
 						element={<DungeonCrawler />}
-					/>
-					<Route
-						path="frontline"
-						element={<Frontline />}
 					/>
 				</Route>
 			</Routes>
