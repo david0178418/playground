@@ -32,7 +32,8 @@ export const PLAYER = {
   /** Hitscan/projectile auto-attack */
   ATTACK_RANGE: 300,
   ATTACK_DAMAGE: 18,
-  ATTACK_COOLDOWN_SEC: 0.35,
+  ATTACK_COOLDOWN_SEC: 0.35 / 1.5,
+  SHOT_SPREAD_HALF_DEG: 3,
   PROJECTILE_SPEED: 560,
   /** Brief i-frames after absorbing a hit (seconds) */
   HURT_IFRAME_SEC: 0.55,
@@ -49,7 +50,7 @@ export const ALLY = {
 export const ENEMY = {
   RADIUS: 12,
   SPEED: 55,
-  HP: 20,
+  HP: 60,
   DAMAGE: 6,
   ATTACK_COOLDOWN_SEC: 1.15,
   CONTACT_RANGE: 20,

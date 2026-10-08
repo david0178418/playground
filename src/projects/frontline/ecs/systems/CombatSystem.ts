@@ -33,6 +33,7 @@ interface AttackerStats {
   range: number;
   damage: number;
   projectileSpeed: number;
+  shotSpreadHalfDeg?: number;
   coneHalfDeg: number;
   style: string;
   cooldownSec: number;
@@ -87,13 +88,17 @@ function fireAt(
   const dx = target.x - x;
   const dy = target.y - y;
   const len = Math.hypot(dx, dy) || 1;
+  const spreadHalfDeg = attacker.shotSpreadHalfDeg ?? 0;
+  const offset = spreadHalfDeg > 0 ? (Math.random() * 2 - 1) * spreadHalfDeg * Math.PI / 180 : 0;
+  const cos = Math.cos(offset);
+  const sin = Math.sin(offset);
   const speed = attacker.projectileSpeed;
   createProjectile(
     ecs.commands,
     x,
     y,
-    (dx / len) * speed,
-    (dy / len) * speed,
+    ((dx * cos - dy * sin) / len) * speed,
+    ((dx * sin + dy * cos) / len) * speed,
     attacker.damage,
     speed,
     fromAlly,
