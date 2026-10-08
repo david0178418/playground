@@ -6,21 +6,21 @@ export function addPlayerMovementSystem(systems: GameSystemRegistrar): void {
   systems.addSystem('playerMovement')
     .addSingleton('player', playerQuery)
     .runWhenEmpty()
-    .withResources(['inputState', 'phase'])
-    .setProcess(({ queries, dt, resources: { inputState, phase } }) => {
+    .withResources(['inputState', 'phase', 'touchMovement'])
+    .setProcess(({ queries, dt, resources: { inputState, phase, touchMovement } }) => {
       if (phase !== 'playing') return;
       const entity = queries.player;
       if (!entity) return;
 
       const actions = inputState.actions;
-      let dx = 0;
-      let dy = 0;
+      let dx = touchMovement.x;
+      let dy = touchMovement.y;
       if (actions.isActive('left')) dx -= 1;
       if (actions.isActive('right')) dx += 1;
       if (actions.isActive('up')) dy -= 1;
       if (actions.isActive('down')) dy += 1;
 
-      if (dx !== 0 || dy !== 0) {
+      if (Math.hypot(dx, dy) > 1) {
         const len = Math.hypot(dx, dy);
         dx /= len;
         dy /= len;

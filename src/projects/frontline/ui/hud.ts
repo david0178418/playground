@@ -41,7 +41,8 @@ export function renderHud(root: HTMLElement, ecs: GameEngine): void {
           <span>TOK ${tokens}</span>
         </div>
         <div class="hud-hint">${wave.blurb}</div>
-        <div class="hud-hint">WASD/Arrows move · yellow crates recruit · purple tokens bank · push right to door</div>
+        <div class="hud-hint keyboard-hint">WASD/Arrows move · yellow crates recruit · purple tokens bank · push right to door</div>
+        <div class="hud-hint mobile-hint">Auto-fire · yellow crates recruit · purple tokens bank · push right to door</div>
       </div>
     `,
     root,

@@ -85,6 +85,8 @@ export interface RunStats {
 }
 
 export interface Resources {
+  touchMovement: { readonly x: number; readonly y: number };
+  viewportPaused: boolean;
   phase: RunPhase;
   waveId: WaveId;
   waveElapsed: number;
