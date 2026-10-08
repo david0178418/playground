@@ -30,6 +30,8 @@ export interface ArchetypeDef {
   attackDamage: number;
   attackCooldownSec: number;
   projectileSpeed: number;
+  /** Random projectile aim offset, in degrees on either side of the target. */
+  shotSpreadHalfDeg?: number;
   /** Cone half-angle degrees for breacher-style; 0 = point */
   coneHalfDeg: number;
   attackStyle: AttackStyle;
@@ -46,7 +48,8 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
     maxHp: 75,
     attackRange: 280,
     attackDamage: 14,
-    attackCooldownSec: 0.42,
+    attackCooldownSec: 0.42 / 1.5,
+    shotSpreadHalfDeg: 3,
     projectileSpeed: 520,
     coneHalfDeg: 0,
     attackStyle: 'projectile',
@@ -91,7 +94,8 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
     maxHp: 60,
     attackRange: 240,
     attackDamage: 6,
-    attackCooldownSec: 0.18,
+    attackCooldownSec: 0.18 / 1.5,
+    shotSpreadHalfDeg: 3,
     projectileSpeed: 500,
     coneHalfDeg: 12,
     attackStyle: 'projectile',

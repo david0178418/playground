@@ -43,6 +43,7 @@ export interface Components {
     damage: number;
     cooldownSec: number;
     projectileSpeed: number;
+    shotSpreadHalfDeg?: number;
     coneHalfDeg: number;
     style: 'hitscan' | 'projectile' | 'cone' | 'aura';
     cooldownLeft: number;
