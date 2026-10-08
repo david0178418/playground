@@ -4,12 +4,12 @@ import { createAlly, createEnemy, createPlayer } from '../entities';
 import { addCombatSystem } from './CombatSystem';
 
 describe('automatic gun tuning', () => {
-  for (const [kind, previousCooldown] of [
-    ['player', 0.35],
-    ['rifleman', 0.42],
-    ['gunner', 0.18],
+  for (const [kind, previousCooldown, previousSpeed] of [
+    ['player', 0.35 / 1.5, 560],
+    ['rifleman', 0.42 / 1.5, 520],
+    ['gunner', 0.18 / 1.5, 500],
   ] as const) {
-    test(`${kind} fires 50% faster with bounded spread and unchanged bullet speed`, async () => {
+    test(`${kind} fires twice as fast with bounded spread and doubled bullet speed`, async () => {
       const ecs = createGameEngine();
       const randomSpy = spyOn(Math, 'random');
       try {
@@ -25,13 +25,14 @@ describe('automatic gun tuning', () => {
 
         for (const [random, expectedAngle] of [[0, -3], [0.5, 0], [1, 3]] as const) {
           randomSpy.mockReturnValue(random);
-          ecs.update(previousCooldown / 1.5 / 2);
+          ecs.update(previousCooldown / 4);
           expect(ecs.getEntitiesWithQuery(['projectile'])).toHaveLength(0);
-          ecs.update(previousCooldown / 1.5 / 2);
+          ecs.update(previousCooldown / 4);
           const bullets = ecs.getEntitiesWithQuery(['projectile']);
           expect(bullets).toHaveLength(1);
           for (const bullet of bullets) {
             const { vx, vy, speed } = bullet.components.projectile;
+            expect(speed).toBe(previousSpeed * 2);
             expect(Math.atan2(vy, vx) * 180 / Math.PI).toBeCloseTo(expectedAngle, 8);
             expect(Math.hypot(vx, vy)).toBeCloseTo(speed, 8);
             ecs.removeEntity(bullet.id);

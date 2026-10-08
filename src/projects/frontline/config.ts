@@ -25,16 +25,16 @@ export const CORRIDOR = {
 } as const;
 
 export const PLAYER = {
-  SPEED: 200,
+  SPEED: 100,
   RADIUS: 14,
   MAX_HP: 140,
   COLOR: '#4fc3f7',
   /** Hitscan/projectile auto-attack */
   ATTACK_RANGE: 300,
   ATTACK_DAMAGE: 18,
-  ATTACK_COOLDOWN_SEC: 0.35 / 1.5,
+  ATTACK_COOLDOWN_SEC: 0.35 / 3,
   SHOT_SPREAD_HALF_DEG: 3,
-  PROJECTILE_SPEED: 560,
+  PROJECTILE_SPEED: 1120,
   /** Brief i-frames after absorbing a hit (seconds) */
   HURT_IFRAME_SEC: 0.55,
 } as const;
@@ -50,7 +50,7 @@ export const ALLY = {
 export const ENEMY = {
   RADIUS: 12,
   SPEED: 55,
-  HP: 60,
+  HP: 120,
   DAMAGE: 6,
   ATTACK_COOLDOWN_SEC: 1.15,
   CONTACT_RANGE: 20,
