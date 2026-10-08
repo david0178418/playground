@@ -141,13 +141,15 @@
 .mobile-hint, .touch-controls, .landscape-prompt { display: none; }
 .touch-controls {
   position: absolute;
-  bottom: max(12px, env(safe-area-inset-bottom));
-  left: max(16px, env(safe-area-inset-left));
-  align-items: center;
-  gap: 12px;
+  inset: 0;
+  pointer-events: none;
   z-index: 3;
 }
 .touch-joystick {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  visibility: hidden;
+  pointer-events: none;
   width: 112px;
   height: 112px;
   border: 1px solid rgba(144, 164, 174, 0.65);
@@ -165,8 +167,8 @@
   background: rgba(79, 195, 247, 0.45);
   pointer-events: none;
 }
-.touch-joystick[data-active="true"] { border-color: #4fc3f7; }
-.touch-hint { font-size: 11px; color: #b0bec5; background: rgba(10, 14, 22, 0.75); padding: 4px 8px; border-radius: 6px; }
+.touch-joystick[data-active="true"] { visibility: visible; border-color: #4fc3f7; }
+.touch-hint { position: absolute; bottom: max(12px, env(safe-area-inset-bottom)); left: max(16px, env(safe-area-inset-left)); font-size: 11px; color: #b0bec5; background: rgba(10, 14, 22, 0.75); padding: 4px 8px; border-radius: 6px; }
 #frontline-app:has(#overlay:not([hidden])) .touch-controls { display: none; }
 .landscape-prompt {
   position: absolute;
@@ -198,8 +200,10 @@
 }
 .display-message:empty { display: none; }
 
+.touch-controls:has(.touch-joystick[data-active="true"]) { display: block; }
+
 @media (any-pointer: coarse), (max-width: 1000px) and (max-height: 500px) {
-  .touch-controls { display: flex; }
+  .touch-controls { display: block; }
   .keyboard-hint { display: none; }
   .mobile-hint { display: block; }
 }
@@ -220,6 +224,6 @@
 }
 @media (orientation: portrait) and (max-width: 900px), (orientation: portrait) and (any-pointer: coarse) {
   .landscape-prompt { display: flex; }
-  .frontline-root #hud, .touch-controls { display: none; }
+  .frontline-root #hud, .touch-controls, .touch-controls:has(.touch-joystick[data-active="true"]) { display: none; }
   .display-message { max-width: calc(100% - 24px); }
 }
