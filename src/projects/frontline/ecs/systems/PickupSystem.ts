@@ -2,11 +2,12 @@ import { ENEMY, EXPERIENCE, SCAVENGE } from '../../config';
 import { createExperienceDrop } from '../entities';
 import type { GameSystemRegistrar } from '../Engine';
 import { beginLevelUp } from '../progression';
-import { enemyQuery, experienceQuery, playerQuery, tokenQuery } from '../queries';
+import { allyQuery, enemyQuery, experienceQuery, playerQuery, tokenQuery } from '../queries';
 
 export function addPickupSystem(systems: GameSystemRegistrar): void {
   systems.addSystem('pickup')
     .addSingleton('player', playerQuery)
+    .addQuery('allies', allyQuery)
     .addQuery('experience', experienceQuery)
     .addQuery('tokens', tokenQuery)
     .addQuery('enemies', enemyQuery)
@@ -16,7 +17,17 @@ export function addPickupSystem(systems: GameSystemRegistrar): void {
       if (resources.phase !== 'playing') return;
       const player = queries.player;
       if (!player) return;
-      const { x: px, y: py } = player.components.position;
+      const collectors = [
+        player.components.position,
+        ...queries.allies.filter(function (ally) {
+          return ally.components.ally.archetypeId === 'scout' && ally.components.health.current > 0;
+        }).map(function (ally) { return ally.components.position; }),
+      ];
+      const canCollect = function (pos: { x: number; y: number }, range: number): boolean {
+        return collectors.some(function (collector) {
+          return Math.hypot(pos.x - collector.x, pos.y - collector.y) <= range;
+        });
+      };
 
       for (const enemy of queries.enemies) {
         if (enemy.components.health.current > 0) continue;
@@ -30,7 +41,7 @@ export function addPickupSystem(systems: GameSystemRegistrar): void {
       for (const token of queries.tokens) {
         if (token.components.scavengeToken.banked) continue;
         const pos = token.components.position;
-        if (Math.hypot(pos.x - px, pos.y - py) > SCAVENGE.PICKUP_RANGE) continue;
+        if (!canCollect(pos, SCAVENGE.PICKUP_RANGE)) continue;
         token.components.scavengeToken.banked = true;
         ecs.setResource('bankedTokens', ecs.getResource('bankedTokens') + 1);
         ecs.commands.removeEntity(token.id);
@@ -39,7 +50,7 @@ export function addPickupSystem(systems: GameSystemRegistrar): void {
       let gained = 0;
       for (const drop of queries.experience) {
         const pos = drop.components.position;
-        if (Math.hypot(pos.x - px, pos.y - py) > EXPERIENCE.PICKUP_RANGE) continue;
+        if (!canCollect(pos, EXPERIENCE.PICKUP_RANGE)) continue;
         gained += drop.components.experienceDrop.amount;
         ecs.commands.removeEntity(drop.id);
       }
