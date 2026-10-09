@@ -1,13 +1,12 @@
 import { CORRIDOR, DOOR, SOFT_SQUAD_CAP, WAVE_DURATION_SEC } from '../config';
-import { V1_OFFER_ARCHETYPES, type ArchetypeId } from '../data/archetypes';
 import { waveDef, type WaveId } from '../data/waves';
+import type { Components } from './types';
 import type { GameEngine } from './Engine';
-import { resetRunStats } from './Engine';
-import { createAlly, createDoor, createPlayer, createRecruitCrate } from './entities';
+import { createAlly, createDoor, createPlayer } from './entities';
 
 function clearWaveEntities(ecs: GameEngine, keepPlayerAndAllies: boolean): void {
-  const remove = (components: readonly string[]) => {
-    for (const e of ecs.getEntitiesWithQuery(components as never)) {
+  const remove = (components: readonly (keyof Components)[]) => {
+    for (const e of ecs.getEntitiesWithQuery(components)) {
       if (keepPlayerAndAllies) {
         if (ecs.entityManager.getComponent(e.id, 'player')) continue;
         if (ecs.entityManager.getComponent(e.id, 'ally')) continue;
@@ -17,30 +16,12 @@ function clearWaveEntities(ecs: GameEngine, keepPlayerAndAllies: boolean): void 
   };
   remove(['enemy']);
   remove(['projectile']);
-  remove(['recruitCrate']);
   remove(['scavengeToken']); // unbanked lost on exit
-  remove(['coinDrop']);
+  remove(['experienceDrop']);
   remove(['door']);
   if (!keepPlayerAndAllies) {
     remove(['player']);
     remove(['ally']);
-  }
-}
-
-function pickOffer(forced: ArchetypeId | null): ArchetypeId {
-  if (forced) return forced;
-  return V1_OFFER_ARCHETYPES[Math.floor(Math.random() * V1_OFFER_ARCHETYPES.length)]!;
-}
-
-function spawnOffers(ecs: GameEngine, waveId: WaveId): void {
-  const wave = waveDef(waveId);
-  const midY = CORRIDOR.HEIGHT / 2;
-  for (const offer of wave.offers) {
-    // Keep crates near midline so WASD approach is natural (dual offers split ±18)
-    createRecruitCrate(ecs, offer.x, midY - (offer.dual ? 18 : 0), pickOffer(offer.forced));
-    if (offer.dual) {
-      createRecruitCrate(ecs, offer.dual.x, midY + 18, offer.dual.forced);
-    }
   }
 }
 
@@ -68,7 +49,9 @@ export function startWave(ecs: GameEngine, waveId: WaveId, fresh: boolean): void
     createAlly(ecs, startX - 40, startY + 20, 'rifleman', 0);
     ecs.setResource('coins', 0);
     ecs.setResource('bankedTokens', 0);
-    resetRunStats();
+    ecs.setResource('progression', { level: 1, experience: 0, choices: [] });
+    ecs.enableSystemGroup('timers');
+    ecs.setResource('stats', { wavesCleared: 0, alliesRecruited: 0, alliesLost: 0, alliesAlive: 1, enemiesKilled: 0 });
   } else {
     // Nudge player back toward corridor start of next segment feel
     for (const p of ecs.getEntitiesWithQuery(['player', 'position'])) {
@@ -77,7 +60,6 @@ export function startWave(ecs: GameEngine, waveId: WaveId, fresh: boolean): void
   }
 
   createDoor(ecs, DOOR.X, CORRIDOR.HEIGHT / 2);
-  spawnOffers(ecs, waveId);
 
   // Refresh alliesAlive count
   const allies = ecs.getEntitiesWithQuery(['ally', 'health']);

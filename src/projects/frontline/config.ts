@@ -80,12 +80,6 @@ export const SPAWN = {
   REAR_PACK_SIZE_WAVE_SCALE: 1, // +1 per wave index
 } as const;
 
-export const RECRUIT = {
-  CRATE_RADIUS: 16,
-  PICKUP_RANGE: 48,
-  COLOR: '#ffd54f',
-} as const;
-
 export const SCAVENGE = {
   TOKEN_RADIUS: 10,
   PICKUP_RANGE: 28,
@@ -112,14 +106,12 @@ export const CAMERA = {
   PLAYER_SCREEN_X_RATIO: 0.38,
 } as const;
 
-/** Shop costs (currency = enemy coin drops + wave-clear payout). */
+/** Shop costs (currency = enemy kills + wave-clear payout). */
 export const SHOP = {
   HEAL_COST: 20,
   HEAL_AMOUNT: 50,
   REVIVE_COST: 35,
   /** Revive also consumes 1 banked scavenge token */
-  REROLL_COST: 12,
-  OFFER_SLOTS: 3,
   /** Coins granted once when entering shop after clearing a wave */
   WAVE_CLEAR_PAYOUT: 25,
   /** Extra coins per wave index beyond 1 (wave 1→25, wave 2→30, …) */
@@ -131,4 +123,12 @@ export const COLORS = {
   CORRIDOR: '#243044',
   CORRIDOR_EDGE: '#1e2740',
   GRID: '#2a3548',
+} as const;
+
+/** Prototype leveling pace: five kills for level 2, then two more per level. */
+export const EXPERIENCE = {
+  PER_ENEMY: 10,
+  FIRST_LEVEL_COST: 50,
+  COST_GROWTH: 20,
+  PICKUP_RANGE: 32,
 } as const;

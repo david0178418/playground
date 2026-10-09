@@ -1,95 +1,51 @@
-import { ENEMY, RECRUIT, SCAVENGE, SOFT_SQUAD_CAP } from '../../config';
-import { createAlly, createCoinDrop } from '../entities';
+import { ENEMY, EXPERIENCE, SCAVENGE } from '../../config';
+import { createExperienceDrop } from '../entities';
 import type { GameSystemRegistrar } from '../Engine';
-import {
-  allyQuery,
-  coinQuery,
-  crateQuery,
-  enemyQuery,
-  playerQuery,
-  tokenQuery,
-} from '../queries';
+import { beginLevelUp } from '../progression';
+import { enemyQuery, experienceQuery, playerQuery, tokenQuery } from '../queries';
 
 export function addPickupSystem(systems: GameSystemRegistrar): void {
   systems.addSystem('pickup')
     .addSingleton('player', playerQuery)
-    .addQuery('allies', allyQuery)
-    .addQuery('crates', crateQuery)
+    .addQuery('experience', experienceQuery)
     .addQuery('tokens', tokenQuery)
-    .addQuery('coins', coinQuery)
     .addQuery('enemies', enemyQuery)
     .runWhenEmpty()
-    .withResources(['phase', 'coins', 'bankedTokens', 'softSquadCap', 'stats'])
+    .withResources(['phase'])
     .setProcess(({ queries, ecs, resources }) => {
       if (resources.phase !== 'playing') return;
       const player = queries.player;
       if (!player) return;
-      const px = player.components.position.x;
-      const py = player.components.position.y;
+      const { x: px, y: py } = player.components.position;
 
-      // Enemy death → coin drop + cleanup
-      for (const e of queries.enemies) {
-        if (e.components.health.current > 0) continue;
-        createCoinDrop(
-          ecs.commands,
-          e.components.position.x,
-          e.components.position.y,
-          ENEMY.COIN_DROP,
-        );
-        ecs.commands.removeEntity(e.id);
+      for (const enemy of queries.enemies) {
+        if (enemy.components.health.current > 0) continue;
+        createExperienceDrop(ecs.commands, enemy.components.position.x, enemy.components.position.y, EXPERIENCE.PER_ENEMY);
+        ecs.setResource('coins', ecs.getResource('coins') + ENEMY.COIN_DROP);
+        ecs.commands.removeEntity(enemy.id);
         const stats = ecs.getResource('stats');
-        ecs.setResource('stats', {
-          ...stats,
-          enemiesKilled: stats.enemiesKilled + 1,
-        });
+        ecs.setResource('stats', { ...stats, enemiesKilled: stats.enemiesKilled + 1 });
       }
 
-      // Recruit crates — touch to accept (soft cap blocks)
-      const livingAllies = queries.allies.filter(a => a.components.health.current > 0).length;
-      const cap = resources.softSquadCap ?? SOFT_SQUAD_CAP;
-
-      for (const crate of queries.crates) {
-        if (crate.components.recruitCrate.claimed) continue;
-        const cpos = crate.components.position;
-        const d = Math.hypot(cpos.x - px, cpos.y - py);
-        if (d > RECRUIT.PICKUP_RANGE) continue;
-        if (livingAllies >= cap) continue;
-
-        crate.components.recruitCrate.claimed = true;
-        const idx = livingAllies;
-        createAlly(
-          ecs,
-          cpos.x,
-          cpos.y,
-          crate.components.recruitCrate.archetypeId,
-          idx,
-        );
-        ecs.commands.removeEntity(crate.id);
-        const stats = ecs.getResource('stats');
-        ecs.setResource('stats', {
-          ...stats,
-          alliesRecruited: stats.alliesRecruited + 1,
-          alliesAlive: stats.alliesAlive + 1,
-        });
-        break; // one recruit per frame is enough
+      for (const token of queries.tokens) {
+        if (token.components.scavengeToken.banked) continue;
+        const pos = token.components.position;
+        if (Math.hypot(pos.x - px, pos.y - py) > SCAVENGE.PICKUP_RANGE) continue;
+        token.components.scavengeToken.banked = true;
+        ecs.setResource('bankedTokens', ecs.getResource('bankedTokens') + 1);
+        ecs.commands.removeEntity(token.id);
       }
 
-      // Scavenge tokens — walk over to bank; unbanked lost on exit
-      for (const tok of queries.tokens) {
-        if (tok.components.scavengeToken.banked) continue;
-        const tpos = tok.components.position;
-        if (Math.hypot(tpos.x - px, tpos.y - py) > SCAVENGE.PICKUP_RANGE) continue;
-        tok.components.scavengeToken.banked = true;
-        ecs.setResource('bankedTokens', resources.bankedTokens + 1);
-        ecs.commands.removeEntity(tok.id);
+      let gained = 0;
+      for (const drop of queries.experience) {
+        const pos = drop.components.position;
+        if (Math.hypot(pos.x - px, pos.y - py) > EXPERIENCE.PICKUP_RANGE) continue;
+        gained += drop.components.experienceDrop.amount;
+        ecs.commands.removeEntity(drop.id);
       }
-
-      // Coins
-      for (const coin of queries.coins) {
-        const cpos = coin.components.position;
-        if (Math.hypot(cpos.x - px, cpos.y - py) > 22) continue;
-        ecs.setResource('coins', resources.coins + coin.components.coinDrop.amount);
-        ecs.commands.removeEntity(coin.id);
-      }
+      if (gained === 0 || player.components.health.current <= 0) return;
+      const progression = ecs.getResource('progression');
+      ecs.setResource('progression', { ...progression, experience: progression.experience + gained });
+      beginLevelUp(ecs);
     });
 }

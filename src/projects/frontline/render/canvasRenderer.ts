@@ -115,12 +115,6 @@ function drawEntity(ctx: CanvasRenderingContext2D, e: DrawEnt): void {
     ctx.fillRect(e.x - e.width / 2, e.y - e.height / 2, e.width, e.height);
     ctx.strokeStyle = '#eceff1';
     ctx.strokeRect(e.x - e.width / 2, e.y - e.height / 2, e.width, e.height);
-  } else if (e.shape === 'crate') {
-    ctx.fillStyle = e.color;
-    ctx.fillRect(e.x - e.radius, e.y - e.radius, e.radius * 2, e.radius * 2);
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(e.x - e.radius, e.y - e.radius, e.radius * 2, e.radius * 2);
   } else if (e.shape === 'token') {
     ctx.beginPath();
     ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);

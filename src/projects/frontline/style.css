@@ -87,8 +87,6 @@
   gap: 8px;
   margin-bottom: 16px;
 }
-.frontline-root .shop-offers { margin-bottom: 16px; }
-.frontline-root .shop-offers ul { margin: 4px 0 0; padding-left: 18px; }
 .frontline-root .muted { color: #90a4ae; font-size: 12px; }
 .frontline-root button {
   font: inherit;
@@ -227,3 +225,8 @@
   .frontline-root #hud, .touch-controls, .touch-controls:has(.touch-joystick[data-active="true"]) { display: none; }
   .display-message { max-width: calc(100% - 24px); }
 }
+
+.frontline-root .experience-bar { width: 100%; height: 10px; accent-color: #4dd0e1; }
+.frontline-root .unit-choices { display: flex; flex-direction: column; gap: 12px; }
+.frontline-root .unit-choice { display: flex; flex-direction: column; gap: 4px; text-align: left; }
+.frontline-root .unit-choice strong { font-size: 18px; }
