@@ -1,11 +1,11 @@
 import type { AllComponents } from './types';
 
 export const playerQuery = {
-  with: ['player', 'position', 'health', 'attacker'] as const satisfies readonly (keyof AllComponents)[],
+  with: ['player', 'position', 'velocity', 'health', 'attacker'] as const satisfies readonly (keyof AllComponents)[],
 };
 
 export const allyQuery = {
-  with: ['ally', 'position', 'health', 'attacker'] as const satisfies readonly (keyof AllComponents)[],
+  with: ['ally', 'position', 'velocity', 'health', 'attacker'] as const satisfies readonly (keyof AllComponents)[],
 };
 
 export const enemyQuery = {

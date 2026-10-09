@@ -29,6 +29,13 @@ function nearestEnemy(
   return best;
 }
 
+/** Speeds at or below this are standing still. Real movement is far above it. */
+const STATIONARY_SPEED_LIMIT = 1;
+
+const isStationary = function(velocity: { x: number; y: number }): boolean {
+  return velocity.x * velocity.x + velocity.y * velocity.y <= STATIONARY_SPEED_LIMIT * STATIONARY_SPEED_LIMIT;
+};
+
 interface AttackerStats {
   range: number;
   damage: number;
@@ -117,9 +124,16 @@ export function addCombatSystem(systems: GameSystemRegistrar): void {
       if (phase !== 'playing') return;
       const enemies = queries.enemies as EnemyEnt[];
 
-      const tryAttack = (pos: { x: number; y: number }, attacker: AttackerStats, fromAlly: boolean) => {
+      const tryAttack = (
+        pos: { x: number; y: number },
+        velocity: { x: number; y: number },
+        attacker: AttackerStats,
+        fromAlly: boolean,
+      ) => {
         attacker.cooldownLeft = Math.max(0, attacker.cooldownLeft - dt);
         if (attacker.cooldownLeft > 0) return;
+        // Movement systems write velocity earlier in this update.
+        if (!isStationary(velocity)) return;
         const target = nearestEnemy(pos.x, pos.y, attacker.range, enemies);
         if (!target) return;
         fireAt(ecs, pos.x, pos.y, target, attacker, fromAlly, enemies);
@@ -127,10 +141,15 @@ export function addCombatSystem(systems: GameSystemRegistrar): void {
       };
 
       if (queries.player) {
-        tryAttack(queries.player.components.position, queries.player.components.attacker, true);
+        tryAttack(
+          queries.player.components.position,
+          queries.player.components.velocity,
+          queries.player.components.attacker,
+          true,
+        );
       }
       for (const ally of queries.allies) {
-        tryAttack(ally.components.position, ally.components.attacker, true);
+        tryAttack(ally.components.position, ally.components.velocity, ally.components.attacker, true);
       }
 
       for (const proj of queries.projectiles) {
