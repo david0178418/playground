@@ -1,3 +1,4 @@
+import type { AttackStyle } from '../../data/archetypes';
 import { createProjectile } from '../entities';
 import type { GameEngine, GameSystemRegistrar } from '../Engine';
 import { allyQuery, enemyQuery, playerQuery, projectileQuery } from '../queries';
@@ -14,7 +15,7 @@ function nearestEnemy(
   x: number,
   y: number,
   range: number,
-  enemies: EnemyEnt[],
+  enemies: readonly EnemyEnt[],
 ): { x: number; y: number; dist: number } | null {
   let best: { x: number; y: number; dist: number } | null = null;
   for (const e of enemies) {
@@ -42,7 +43,7 @@ interface AttackerStats {
   projectileSpeed: number;
   shotSpreadHalfDeg?: number;
   coneHalfDeg: number;
-  style: string;
+  style: AttackStyle;
   cooldownSec: number;
   cooldownLeft: number;
 }
@@ -54,9 +55,9 @@ function fireAt(
   target: { x: number; y: number },
   attacker: AttackerStats,
   fromAlly: boolean,
-  enemies: EnemyEnt[],
+  enemies: readonly EnemyEnt[],
 ): void {
-  if (attacker.style === 'cone') {
+  if (attacker.style === 'cone' || (attacker.style === 'melee' && attacker.coneHalfDeg > 0)) {
     const facingX = target.x - x;
     const facingY = target.y - y;
     const facingLen = Math.hypot(facingX, facingY) || 1;
@@ -68,8 +69,8 @@ function fireAt(
       const dx = e.components.position.x - x;
       const dy = e.components.position.y - y;
       const dist = Math.hypot(dx, dy);
-      if (dist > attacker.range || dist < 1) continue;
-      const dot = (dx / dist) * fx + (dy / dist) * fy;
+      if (dist > attacker.range) continue;
+      const dot = dist < 1 ? 1 : (dx / dist) * fx + (dy / dist) * fy;
       if (dot >= cosHalf) {
         e.components.health.current -= attacker.damage;
       }
@@ -77,7 +78,7 @@ function fireAt(
     return;
   }
 
-  if (attacker.style === 'hitscan') {
+  if (attacker.style === 'hitscan' || attacker.style === 'melee') {
     let best: EnemyEnt | null = null;
     let bestD = Infinity;
     for (const en of enemies) {
@@ -122,14 +123,14 @@ export function addCombatSystem(systems: GameSystemRegistrar): void {
     .withResources(['phase'])
     .setProcess(({ queries, dt, ecs, resources: { phase } }) => {
       if (phase !== 'playing') return;
-      const enemies = queries.enemies as EnemyEnt[];
+      const enemies = queries.enemies;
 
-      const tryAttack = (
+      const tryAttack = function(
         pos: { x: number; y: number },
         velocity: { x: number; y: number },
         attacker: AttackerStats,
         fromAlly: boolean,
-      ) => {
+      ) {
         attacker.cooldownLeft = Math.max(0, attacker.cooldownLeft - dt);
         if (attacker.cooldownLeft > 0) return;
         // Movement systems write velocity earlier in this update.

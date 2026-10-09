@@ -1,5 +1,6 @@
 import type { Timer, TimerComponentTypes } from 'ecspresso/plugins/scripting/timers';
-import type { ArchetypeId } from '../data/archetypes';
+import type { EnemyKind } from '../data/enemies';
+import type { AttackStyle, ArchetypeId } from '../data/archetypes';
 import type { WaveId } from '../data/waves';
 
 export type GameAction = 'up' | 'down' | 'left' | 'right' | 'interact' | 'pause';
@@ -29,7 +30,7 @@ export interface Components {
     formationIndex: number;
   };
   enemy: {
-    kind: 'regular' | 'chase';
+    kind: EnemyKind;
     hp: number;
     maxHp: number;
     damage: number;
@@ -45,7 +46,7 @@ export interface Components {
     projectileSpeed: number;
     shotSpreadHalfDeg?: number;
     coneHalfDeg: number;
-    style: 'hitscan' | 'projectile' | 'cone' | 'aura';
+    style: AttackStyle;
     cooldownLeft: number;
   };
   projectile: {

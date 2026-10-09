@@ -1,6 +1,6 @@
 /**
  * Ally archetypes.
- * Level-up pool: Rifleman, Breacher, Marksman, Gunner, Shieldbearer, Scout.
+ * Level-up pool: Rifleman, Breacher, Marksman, Gunner, Brawler, Duelist, Scout.
  * Others are data-ready only (not in offer weights).
  */
 
@@ -9,12 +9,13 @@ export type ArchetypeId =
   | 'breacher'
   | 'marksman'
   | 'gunner'
-  | 'shieldbearer'
+  | 'brawler'
+  | 'duelist'
   | 'medic'
   | 'demo'
   | 'scout';
 
-export type AttackStyle = 'hitscan' | 'projectile' | 'cone' | 'aura';
+export type AttackStyle = 'hitscan' | 'projectile' | 'cone' | 'aura' | 'melee';
 
 export interface ArchetypeDef {
   id: ArchetypeId;
@@ -22,8 +23,8 @@ export interface ArchetypeDef {
   role: string;
   /** True = can appear in level-up choices */
   recruitable: boolean;
-  /** crowd-clear | single-target | baseline | support | absorb */
-  compositionTag: 'baseline' | 'crowd-clear' | 'single-target' | 'support' | 'absorb' | 'breakthrough' | 'runner';
+  /** crowd-clear | single-target | baseline | support */
+  compositionTag: 'baseline' | 'crowd-clear' | 'single-target' | 'support' | 'breakthrough' | 'runner';
   color: string;
   maxHp: number;
   attackRange: number;
@@ -100,20 +101,35 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
     coneHalfDeg: 12,
     attackStyle: 'projectile',
   },
-  shieldbearer: {
-    id: 'shieldbearer',
-    name: 'Shieldbearer',
-    role: 'Absorb / frontline',
+  brawler: {
+    id: 'brawler',
+    name: 'Brawler',
+    role: 'Melee crowd-clear',
     recruitable: true,
-    compositionTag: 'absorb',
-    color: '#64b5f6',
-    maxHp: 120,
-    attackRange: 80,
-    attackDamage: 4,
-    attackCooldownSec: 1.0,
+    compositionTag: 'crowd-clear',
+    color: '#ffca28',
+    maxHp: 130,
+    attackRange: 48,
+    attackDamage: 30,
+    attackCooldownSec: 0.7,
+    projectileSpeed: 0,
+    coneHalfDeg: 65,
+    attackStyle: 'melee',
+  },
+  duelist: {
+    id: 'duelist',
+    name: 'Duelist',
+    role: 'Fast melee single-target',
+    recruitable: true,
+    compositionTag: 'single-target',
+    color: '#f06292',
+    maxHp: 85,
+    attackRange: 40,
+    attackDamage: 26,
+    attackCooldownSec: 0.35,
     projectileSpeed: 0,
     coneHalfDeg: 0,
-    attackStyle: 'hitscan',
+    attackStyle: 'melee',
   },
   medic: {
     id: 'medic',

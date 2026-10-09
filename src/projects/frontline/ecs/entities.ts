@@ -1,4 +1,5 @@
 import { ALLY, DOOR, ENEMY, PLAYER, SCAVENGE } from '../config';
+import { ENEMY_TYPES, type EnemyKind } from '../data/enemies';
 import { archetype, type ArchetypeId } from '../data/archetypes';
 import type { GameEngine } from './Engine';
 import type { AllComponents } from './types';
@@ -68,10 +69,11 @@ export function createEnemy(
   commands: GameEngine['commands'],
   x: number,
   y: number,
-  kind: 'regular' | 'chase',
+  kind: EnemyKind,
   hpScale = 1,
 ): void {
-  const hp = Math.round(ENEMY.HP * hpScale);
+  const def = ENEMY_TYPES[kind];
+  const hp = Math.round(ENEMY.HP * hpScale * def.hpMultiplier);
   commands.spawn({
     position: { x, y },
     velocity: { x: 0, y: 0 },
@@ -79,15 +81,15 @@ export function createEnemy(
       kind,
       hp,
       maxHp: hp,
-      damage: ENEMY.DAMAGE,
+      damage: def.damage,
     },
     health: { current: hp, max: hp },
     collider: { radius: ENEMY.RADIUS },
     renderable: {
       shape: 'unit',
-      color: kind === 'chase' ? '#ef5350' : ENEMY.COLOR,
+      color: def.color,
       radius: ENEMY.RADIUS,
-      label: kind === 'chase' ? 'CH' : 'EN',
+      label: def.label,
     },
     timers: {},
   } satisfies Partial<AllComponents>);

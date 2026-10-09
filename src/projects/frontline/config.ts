@@ -41,6 +41,8 @@ export const PLAYER = {
 
 export const ALLY = {
   FOLLOW_DISTANCE: 42,
+  /** Melee recruits engage only targets near the player. */
+  MELEE_LEASH_RANGE: 180,
   FOLLOW_SPREAD: 28,
   SPEED: 190,
   RADIUS: 12,
