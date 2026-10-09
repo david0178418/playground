@@ -63,6 +63,25 @@ test('Scout chooses the nearest resource, respects the player leash, and freezes
   }
 });
 
+test('only one Scout pursues each XP drop', async () => {
+  const ecs = createGameEngine();
+  try {
+    addSquadFollowSystem(ecs);
+    await ecs.initialize();
+    createPlayer(ecs, 400, 240);
+    const firstScout = createAlly(ecs, 358, 212, 'scout', 0);
+    const secondScout = createAlly(ecs, 358, 268, 'scout', 1);
+    createExperienceDrop(ecs.commands, 600, 240, 10);
+    ecs.update(0);
+    ecs.update(0.1);
+
+    expect(ecs.getComponent(firstScout.id, 'position')?.x).toBeGreaterThan(358);
+    expect(ecs.getComponent(secondScout.id, 'position')).toEqual({ x: 358, y: 268 });
+  } finally {
+    await ecs.dispose();
+  }
+});
+
 test('only living Scouts collect, and overlapping player/Scouts credit each resource once', async () => {
   const ecs = createGameEngine();
   try {

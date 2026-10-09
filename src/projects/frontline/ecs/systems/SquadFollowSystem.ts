@@ -21,6 +21,7 @@ export function addSquadFollowSystem(systems: GameSystemRegistrar): void {
       const py = player.components.position.y;
 
       const collectibles = [...queries.experience, ...queries.tokens];
+      const assignedExperienceDrops = new Set<number>();
       for (const ally of queries.allies) {
         const idx = ally.components.ally.formationIndex;
         // Stagger: even indices left-rear, odd right-rear, deeper for higher index
@@ -34,19 +35,24 @@ export function addSquadFollowSystem(systems: GameSystemRegistrar): void {
         const isScout = ally.components.ally.archetypeId === 'scout';
         if (isScout) {
           let nearest: { x: number; y: number } | undefined;
+          let nearestExperienceDropId: number | undefined;
           let nearestDistance = Infinity;
           for (const resource of collectibles) {
             if (resource.components.scavengeToken?.banked) continue;
+            const experienceDropId = 'experienceDrop' in resource.components ? resource.id : undefined;
+            if (experienceDropId !== undefined && assignedExperienceDrops.has(experienceDropId)) continue;
             const resourcePos = resource.components.position;
             if (Math.hypot(resourcePos.x - px, resourcePos.y - py) > SCOUT.COLLECT_RANGE) continue;
             const distance = Math.hypot(resourcePos.x - pos.x, resourcePos.y - pos.y);
             if (distance >= nearestDistance) continue;
             nearest = resourcePos;
+            nearestExperienceDropId = experienceDropId;
             nearestDistance = distance;
           }
           if (nearest) {
             targetX = nearest.x;
             targetY = nearest.y;
+            if (nearestExperienceDropId !== undefined) assignedExperienceDrops.add(nearestExperienceDropId);
           }
         }
         if (ally.components.attacker.style === 'melee') {
