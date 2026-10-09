@@ -57,7 +57,7 @@ export default function Frontline() {
 					<div className="touch-joystick" data-active="false" aria-hidden="true">
 						<span className="joystick-stick" />
 					</div>
-					<span className="touch-hint">Touch anywhere and drag to move · Auto-fire</span>
+					<span className="touch-hint">Touch anywhere and drag to move · stop to fire</span>
 				</div>
 			</div>
 			<div className="landscape-prompt" role="status">

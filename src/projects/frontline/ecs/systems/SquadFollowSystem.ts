@@ -1,5 +1,6 @@
 import { ALLY, CORRIDOR } from '../../config';
 import type { GameSystemRegistrar } from '../Engine';
+import { writeDisplacementVelocity } from '../motion';
 import { allyQuery, playerQuery } from '../queries';
 
 /** Loose formation: allies fan behind/beside player based on formationIndex. */
@@ -25,6 +26,8 @@ export function addSquadFollowSystem(systems: GameSystemRegistrar): void {
         const targetY = py + side * (ALLY.FOLLOW_SPREAD + row * 10);
 
         const pos = ally.components.position;
+        const fromX = pos.x;
+        const fromY = pos.y;
         const dx = targetX - pos.x;
         const dy = targetY - pos.y;
         const dist = Math.hypot(dx, dy);
@@ -32,8 +35,13 @@ export function addSquadFollowSystem(systems: GameSystemRegistrar): void {
           const step = Math.min(dist, ALLY.SPEED * dt);
           pos.x += (dx / dist) * step;
           pos.y += (dy / dist) * step;
+        } else {
+          // Stay in the slot. A moving player carries the ally instead of leaving a one-frame stop.
+          pos.x = targetX;
+          pos.y = targetY;
         }
         pos.y = Math.max(CORRIDOR.EDGE_PAD + ALLY.RADIUS, Math.min(CORRIDOR.HEIGHT - CORRIDOR.EDGE_PAD - ALLY.RADIUS, pos.y));
+        writeDisplacementVelocity(ally.components.velocity, fromX, fromY, pos.x, pos.y, dt);
       }
     });
 }

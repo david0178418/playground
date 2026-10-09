@@ -1,5 +1,6 @@
 import { CORRIDOR, PLAYER } from '../../config';
 import type { GameSystemRegistrar } from '../Engine';
+import { writeDisplacementVelocity } from '../motion';
 import { playerQuery } from '../queries';
 
 export function addPlayerMovementSystem(systems: GameSystemRegistrar): void {
@@ -27,11 +28,14 @@ export function addPlayerMovementSystem(systems: GameSystemRegistrar): void {
       }
 
       const pos = entity.components.position;
+      const fromX = pos.x;
+      const fromY = pos.y;
       pos.x += dx * PLAYER.SPEED * dt;
       pos.y += dy * PLAYER.SPEED * dt;
 
       // Unidirectional: cannot escape left out of the run
       pos.x = Math.max(CORRIDOR.LEFT_WALL + PLAYER.RADIUS, Math.min(CORRIDOR.WIDTH - PLAYER.RADIUS, pos.x));
       pos.y = Math.max(CORRIDOR.EDGE_PAD + PLAYER.RADIUS, Math.min(CORRIDOR.HEIGHT - CORRIDOR.EDGE_PAD - PLAYER.RADIUS, pos.y));
+      writeDisplacementVelocity(entity.components.velocity, fromX, fromY, pos.x, pos.y, dt);
     });
 }

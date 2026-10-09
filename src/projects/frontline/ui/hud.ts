@@ -46,8 +46,8 @@ export function renderHud(root: HTMLElement, ecs: GameEngine): void {
         <div class="hud-row"><span>Level ${progression.level}</span><span>${progression.experience} / ${cost} XP</span></div>
         <progress class="experience-bar" aria-label="Experience to next level" max=${cost} value=${progression.experience}></progress>
         <div class="hud-hint">${wave.blurb}</div>
-        <div class="hud-hint keyboard-hint">WASD/Arrows move · cyan gems give XP · level up to recruit · push right to door</div>
-        <div class="hud-hint mobile-hint">Auto-fire · cyan gems give XP · level up to recruit · push right to door</div>
+        <div class="hud-hint keyboard-hint">WASD/Arrows move · stop to fire · cyan gems give XP · level up to recruit · push right to door</div>
+        <div class="hud-hint mobile-hint">Stop to fire · cyan gems give XP · level up to recruit · push right to door</div>
       </div>
     `,
     root,
