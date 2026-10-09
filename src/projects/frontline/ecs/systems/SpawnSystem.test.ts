@@ -1,5 +1,6 @@
 import { describe, expect, spyOn, test } from 'bun:test';
-import { DOOR } from '../../config';
+import { CORRIDOR, DOOR, ENEMY } from '../../config';
+import { ENEMY_TYPES } from '../../data/enemies';
 import { waveDef, type WaveId } from '../../data/waves';
 import { createGameEngine } from '../Engine';
 import { createPlayer } from '../entities';
@@ -21,19 +22,20 @@ describe('opponent packs grow toward the goal', () => {
           ecs.setResource('rearNextAt', 0);
           ecs.setResource('spawnAheadAccumulator', 4);
           ecs.update(0);
-          const enemies = ecs.getEntitiesWithQuery(['enemy']);
-          const expectedHp = { 1: 120, 2: 150, 3: 180 }[waveId];
+          const enemies = ecs.getEntitiesWithQuery(['enemy', 'position']);
+          const baseHp = { 1: 120, 2: 150, 3: 180 }[waveId];
           for (const enemy of enemies) {
+            const expectedHp = Math.round(baseHp * ENEMY_TYPES[enemy.components.enemy.kind].hpMultiplier);
             expect(enemy.components.health).toEqual({ current: expectedHp, max: expectedHp });
             expect(enemy.components.enemy.hp).toBe(expectedHp);
             expect(enemy.components.enemy.maxHp).toBe(expectedHp);
           }
           return {
             ahead: enemies.filter(function (enemy) {
-              return enemy.components.enemy.kind === 'regular';
+              return enemy.components.position.x >= Math.min(x + ENEMY.AHEAD_MIN, CORRIDOR.WIDTH - 40);
             }).length,
             rear: enemies.filter(function (enemy) {
-              return enemy.components.enemy.kind === 'chase';
+              return enemy.components.position.x < Math.min(x + ENEMY.AHEAD_MIN, CORRIDOR.WIDTH - 40);
             }).length,
           };
         } finally {
@@ -67,7 +69,7 @@ describe('opponent packs grow toward the goal', () => {
       ecs.setResource('waveId', waveId);
       ecs.setResource('spawnAheadAccumulator', 4.6);
       ecs.update(0);
-      const count = ecs.getEntitiesWithQuery(['enemy']).length;
+      const count = ecs.getEntitiesWithQuery(['enemy', 'position']).length;
       expect(count).toBeGreaterThanOrEqual(1);
       expect(count).toBeLessThanOrEqual(3);
     } finally {

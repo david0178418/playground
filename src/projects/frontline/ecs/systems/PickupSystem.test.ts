@@ -86,16 +86,19 @@ test('XP overflow queues multiple choices, recruitment exceeds five, waves prese
   }
 });
 
-test('six recruitable types are reachable and each roll contains three distinct types', () => {
-  expect(RECRUITABLE_ARCHETYPES).toHaveLength(6);
+test('seven recruitable types are reachable and each roll contains three distinct types', () => {
+  expect(RECRUITABLE_ARCHETYPES).toHaveLength(7);
+  expect(RECRUITABLE_ARCHETYPES).toContain('brawler');
+  expect(RECRUITABLE_ARCHETYPES).toContain('duelist');
+  expect(RECRUITABLE_ARCHETYPES).not.toContain('shieldbearer');
   const reached = new Set<string>();
-  for (let index = 0; index < 6; index++) {
-    const choices = rollUnitChoices(() => (index + 0.1) / 6);
+  for (let index = 0; index < RECRUITABLE_ARCHETYPES.length; index++) {
+    const choices = rollUnitChoices(() => (index + 0.1) / RECRUITABLE_ARCHETYPES.length);
     expect(choices).toHaveLength(3);
     expect(new Set(choices).size).toBe(3);
     choices.forEach(id => reached.add(id));
   }
-  expect(reached.size).toBe(6);
+  expect(reached.size).toBe(RECRUITABLE_ARCHETYPES.length);
 });
 
 test('lethal damage wins over a simultaneous XP pickup', async () => {

@@ -1,4 +1,5 @@
 import { CORRIDOR, DOOR, ENEMY, SPAWN } from '../../config';
+import { rollEnemyKind } from '../../data/enemies';
 import { waveDef } from '../../data/waves';
 import { createEnemy } from '../entities';
 import type { GameSystemRegistrar } from '../Engine';
@@ -57,7 +58,7 @@ export function addSpawnSystem(systems: GameSystemRegistrar): void {
         for (let i = 0; i < n; i++) {
           const x = px + rand(ENEMY.AHEAD_MIN, ENEMY.AHEAD_MAX);
           const y = rand(CORRIDOR.EDGE_PAD + 30, CORRIDOR.HEIGHT - CORRIDOR.EDGE_PAD - 30);
-          createEnemy(ecs.commands, Math.min(x, CORRIDOR.WIDTH - 40), y, 'regular', hpScale);
+          createEnemy(ecs.commands, Math.min(x, CORRIDOR.WIDTH - 40), y, rollEnemyKind(false), hpScale);
         }
       }
       ecs.setResource('spawnAheadAccumulator', acc);
@@ -72,7 +73,7 @@ export function addSpawnSystem(systems: GameSystemRegistrar): void {
             px - rand(ENEMY.REAR_OFFSET_MIN, ENEMY.REAR_OFFSET_MAX) - i * 18,
           );
           const y = rand(CORRIDOR.EDGE_PAD + 30, CORRIDOR.HEIGHT - CORRIDOR.EDGE_PAD - 30);
-          createEnemy(ecs.commands, x, y, 'chase', hpScale);
+          createEnemy(ecs.commands, x, y, rollEnemyKind(true), hpScale);
         }
         ecs.setResource('rearNextAt', t + wave.rearIntervalSec);
       }

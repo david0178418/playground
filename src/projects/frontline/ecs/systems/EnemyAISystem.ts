@@ -1,4 +1,5 @@
 import { ALLY, CORRIDOR, ENEMY, PLAYER } from '../../config';
+import { ENEMY_TYPES } from '../../data/enemies';
 import { createScavengeToken } from '../entities';
 import type { GameSystemRegistrar } from '../Engine';
 import { allyQuery, enemyQuery, playerQuery } from '../queries';
@@ -85,12 +86,26 @@ export function addEnemyAISystem(systems: GameSystemRegistrar): void {
         const pos = enemy.components.position;
         const kind = enemy.components.enemy.kind;
 
-        const speed = kind === 'chase' ? ENEMY.SPEED * 1.2 : ENEMY.SPEED;
-        const dx = px - pos.x;
-        const dy = py - pos.y;
-        const dist = Math.hypot(dx, dy) || 1;
-        pos.x += (dx / dist) * speed * dt;
-        pos.y += (dy / dist) * speed * dt;
+        const def = ENEMY_TYPES[kind];
+        let target = player.components.position;
+        if (def.engagesAllies) {
+          let nearestDistance = player.components.health.current > 0 ? Math.hypot(px - pos.x, py - pos.y) : Infinity;
+          for (const ally of queries.allies) {
+            if (ally.components.health.current <= 0) continue;
+            const distance = Math.hypot(ally.components.position.x - pos.x, ally.components.position.y - pos.y);
+            if (distance < nearestDistance) {
+              target = ally.components.position;
+              nearestDistance = distance;
+            }
+          }
+        }
+        const dx = target.x - pos.x;
+        const dy = target.y - pos.y;
+        const dist = Math.hypot(dx, dy);
+        const travel = def.engagesAllies ? Math.max(0, dist - def.range * 0.8) : dist;
+        const step = Math.min(travel, def.speed * dt);
+        pos.x += dist > 0 ? (dx / dist) * step : 0;
+        pos.y += dist > 0 ? (dy / dist) * step : 0;
         pos.y = Math.max(
           CORRIDOR.EDGE_PAD + ENEMY.RADIUS,
           Math.min(CORRIDOR.HEIGHT - CORRIDOR.EDGE_PAD - ENEMY.RADIUS, pos.y),
@@ -98,12 +113,14 @@ export function addEnemyAISystem(systems: GameSystemRegistrar): void {
 
         let cd = attackCd.get(enemy.id) ?? 0;
         cd = Math.max(0, cd - dt);
-        if (cd <= 0 && dist <= ENEMY.CONTACT_RANGE) {
+        if (cd <= 0 && Math.hypot(target.x - pos.x, target.y - pos.y) <= def.range) {
           const stats = ecs.getResource('stats');
           routeDamageToSquadThenPlayer(
             enemy.components.enemy.damage,
-            queries.allies as AllyEntity[],
-            player as PlayerEntity,
+            def.engagesAllies ? queries.allies.filter(function (ally) {
+              return Math.hypot(ally.components.position.x - pos.x, ally.components.position.y - pos.y) <= def.range;
+            }) : queries.allies,
+            !def.engagesAllies || Math.hypot(px - pos.x, py - pos.y) <= def.range ? player : null,
             pos.x,
             pos.y,
             (ally) => {
@@ -122,7 +139,7 @@ export function addEnemyAISystem(systems: GameSystemRegistrar): void {
             },
             simTime,
           );
-          cd = ENEMY.ATTACK_COOLDOWN_SEC;
+          cd = def.cooldownSec;
         }
         attackCd.set(enemy.id, cd);
       }
