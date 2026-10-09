@@ -164,7 +164,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
   scout: {
     id: 'scout',
     name: 'Scout',
-    role: 'Runner / map agency',
+    role: 'Collects nearby XP and tokens',
     recruitable: true,
     compositionTag: 'runner',
     color: '#80cbc4',

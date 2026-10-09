@@ -49,6 +49,12 @@ export const ALLY = {
   HURT_IFRAME_SEC: 0.4,
 } as const;
 
+/** Scouts gather within this distance of the player, then rejoin formation. */
+export const SCOUT = {
+  COLLECT_RANGE: 360,
+  SPEED: 240,
+} as const;
+
 export const ENEMY = {
   RADIUS: 12,
   SPEED: 55,

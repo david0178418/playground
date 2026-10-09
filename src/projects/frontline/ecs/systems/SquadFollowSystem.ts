@@ -1,7 +1,7 @@
-import { ALLY, CORRIDOR } from '../../config';
+import { ALLY, CORRIDOR, SCOUT } from '../../config';
 import type { GameSystemRegistrar } from '../Engine';
 import { writeDisplacementVelocity } from '../motion';
-import { allyQuery, enemyQuery, playerQuery } from '../queries';
+import { allyQuery, enemyQuery, experienceQuery, playerQuery, tokenQuery } from '../queries';
 
 /** Loose formation: allies fan behind/beside player based on formationIndex. */
 export function addSquadFollowSystem(systems: GameSystemRegistrar): void {
@@ -9,6 +9,8 @@ export function addSquadFollowSystem(systems: GameSystemRegistrar): void {
     .addSingleton('player', playerQuery)
     .addQuery('allies', allyQuery)
     .addQuery('enemies', enemyQuery)
+    .addQuery('experience', experienceQuery)
+    .addQuery('tokens', tokenQuery)
     .runWhenEmpty()
     .withResources(['phase'])
     .setProcess(({ queries, dt, resources: { phase } }) => {
@@ -18,6 +20,7 @@ export function addSquadFollowSystem(systems: GameSystemRegistrar): void {
       const px = player.components.position.x;
       const py = player.components.position.y;
 
+      const collectibles = [...queries.experience, ...queries.tokens];
       for (const ally of queries.allies) {
         const idx = ally.components.ally.formationIndex;
         // Stagger: even indices left-rear, odd right-rear, deeper for higher index
@@ -28,6 +31,24 @@ export function addSquadFollowSystem(systems: GameSystemRegistrar): void {
 
         if (ally.components.health.current <= 0) continue;
         const pos = ally.components.position;
+        const isScout = ally.components.ally.archetypeId === 'scout';
+        if (isScout) {
+          let nearest: { x: number; y: number } | undefined;
+          let nearestDistance = Infinity;
+          for (const resource of collectibles) {
+            if (resource.components.scavengeToken?.banked) continue;
+            const resourcePos = resource.components.position;
+            if (Math.hypot(resourcePos.x - px, resourcePos.y - py) > SCOUT.COLLECT_RANGE) continue;
+            const distance = Math.hypot(resourcePos.x - pos.x, resourcePos.y - pos.y);
+            if (distance >= nearestDistance) continue;
+            nearest = resourcePos;
+            nearestDistance = distance;
+          }
+          if (nearest) {
+            targetX = nearest.x;
+            targetY = nearest.y;
+          }
+        }
         if (ally.components.attacker.style === 'melee') {
           const target = queries.enemies
             .filter(function (enemy) {
@@ -57,7 +78,7 @@ export function addSquadFollowSystem(systems: GameSystemRegistrar): void {
         const dy = targetY - pos.y;
         const dist = Math.hypot(dx, dy);
         if (dist > 4) {
-          const step = Math.min(dist, ALLY.SPEED * dt);
+          const step = Math.min(dist, (isScout ? SCOUT.SPEED : ALLY.SPEED) * dt);
           pos.x += (dx / dist) * step;
           pos.y += (dy / dist) * step;
         } else {
