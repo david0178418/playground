@@ -1,6 +1,6 @@
 /**
  * Ally archetypes.
- * v1 offer pool spawns: Rifleman, Breacher, Marksman.
+ * Level-up pool: Rifleman, Breacher, Marksman, Gunner, Shieldbearer, Scout.
  * Others are data-ready only (not in offer weights).
  */
 
@@ -20,8 +20,8 @@ export interface ArchetypeDef {
   id: ArchetypeId;
   name: string;
   role: string;
-  /** True = can appear in v1 recruit crates */
-  v1Offer: boolean;
+  /** True = can appear in level-up choices */
+  recruitable: boolean;
   /** crowd-clear | single-target | baseline | support | absorb */
   compositionTag: 'baseline' | 'crowd-clear' | 'single-target' | 'support' | 'absorb' | 'breakthrough' | 'runner';
   color: string;
@@ -42,7 +42,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
     id: 'rifleman',
     name: 'Rifleman',
     role: 'Baseline DPS',
-    v1Offer: true,
+    recruitable: true,
     compositionTag: 'baseline',
     color: '#81c784',
     maxHp: 75,
@@ -58,7 +58,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
     id: 'breacher',
     name: 'Breacher',
     role: 'Close clear',
-    v1Offer: true,
+    recruitable: true,
     compositionTag: 'crowd-clear',
     color: '#ff8a65',
     maxHp: 90,
@@ -73,7 +73,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
     id: 'marksman',
     name: 'Marksman',
     role: 'Single-target',
-    v1Offer: true,
+    recruitable: true,
     compositionTag: 'single-target',
     color: '#ba68c8',
     maxHp: 55,
@@ -88,7 +88,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
     id: 'gunner',
     name: 'Gunner',
     role: 'Sustained MG',
-    v1Offer: false,
+    recruitable: true,
     compositionTag: 'crowd-clear',
     color: '#90a4ae',
     maxHp: 60,
@@ -104,7 +104,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
     id: 'shieldbearer',
     name: 'Shieldbearer',
     role: 'Absorb / frontline',
-    v1Offer: false,
+    recruitable: true,
     compositionTag: 'absorb',
     color: '#64b5f6',
     maxHp: 120,
@@ -119,7 +119,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
     id: 'medic',
     name: 'Medic',
     role: 'Support',
-    v1Offer: false,
+    recruitable: false,
     compositionTag: 'support',
     color: '#a5d6a7',
     maxHp: 45,
@@ -134,7 +134,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
     id: 'demo',
     name: 'Demo',
     role: 'Explosive / breakthrough',
-    v1Offer: false,
+    recruitable: false,
     compositionTag: 'breakthrough',
     color: '#ffb74d',
     maxHp: 50,
@@ -149,7 +149,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
     id: 'scout',
     name: 'Scout',
     role: 'Runner / map agency',
-    v1Offer: false,
+    recruitable: true,
     compositionTag: 'runner',
     color: '#80cbc4',
     maxHp: 35,
@@ -162,10 +162,10 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
   },
 };
 
-/** Archetypes that can spawn in v1 recruit offers. */
-export const V1_OFFER_ARCHETYPES: ArchetypeId[] = (
+/** Archetypes eligible for recruitment. */
+export const RECRUITABLE_ARCHETYPES: ArchetypeId[] = (
   Object.values(ARCHETYPES)
-    .filter(a => a.v1Offer)
+    .filter(a => a.recruitable)
     .map(a => a.id)
 );
 

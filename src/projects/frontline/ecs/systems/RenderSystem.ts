@@ -1,5 +1,7 @@
+import { html, render } from 'lit-html';
 import { renderFrame } from '../../render/canvasRenderer';
 import { renderHud } from '../../ui/hud';
+import { renderLevelUp } from '../../ui/levelUp';
 import { renderShop } from '../../ui/shop';
 import { renderEndScreen } from '../../ui/endScreen';
 import type { GameSystemRegistrar } from '../Engine';
@@ -19,6 +21,7 @@ export function initRenderTargets(
 }
 
 export function addRenderSystem(systems: GameSystemRegistrar): void {
+  let previousPhase: string | null = null;
   systems.addSystem('render')
     .inPhase('postUpdate')
     .setProcess(({ ecs }) => {
@@ -30,9 +33,14 @@ export function addRenderSystem(systems: GameSystemRegistrar): void {
         const refresh = () => {
           // UI buttons mutate state; next frame re-renders
         };
-        if (phase === 'shop') renderShop(overlayRoot, ecs, refresh);
+        if (phase === 'levelUp') renderLevelUp(overlayRoot, ecs);
+        else if (phase === 'shop') renderShop(overlayRoot, ecs, refresh);
         else if (phase === 'won' || phase === 'lost') renderEndScreen(overlayRoot, ecs, refresh);
-        else overlayRoot.innerHTML = '';
+        else render(html``, overlayRoot);
+        if (phase === 'levelUp' && previousPhase !== phase) {
+          overlayRoot.querySelector<HTMLButtonElement>('.unit-choice')?.focus();
+        }
+        previousPhase = phase;
       }
     });
 }

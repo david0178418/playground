@@ -1,18 +1,9 @@
 import { html, render } from 'lit-html';
 import { SHOP } from '../config';
-import { archetype, V1_OFFER_ARCHETYPES, type ArchetypeId } from '../data/archetypes';
 import { waveDef } from '../data/waves';
 import { createAlly } from '../ecs/entities';
 import type { GameEngine } from '../ecs/Engine';
 import { startWave } from '../ecs/waveLifecycle';
-
-function randomOffer(): ArchetypeId {
-  return V1_OFFER_ARCHETYPES[Math.floor(Math.random() * V1_OFFER_ARCHETYPES.length)]!;
-}
-
-export function rerollShopOffers(ecs: GameEngine): void {
-  ecs.setResource('shopOffers', [randomOffer(), randomOffer(), randomOffer()]);
-}
 
 export function renderShop(root: HTMLElement, ecs: GameEngine, onChange: () => void): void {
   const phase = ecs.getResource('phase');
@@ -25,7 +16,7 @@ export function renderShop(root: HTMLElement, ecs: GameEngine, onChange: () => v
   const wave = waveDef(nextWave);
   const coins = ecs.getResource('coins');
   const tokens = ecs.getResource('bankedTokens');
-  const offers = ecs.getResource('shopOffers');
+  const atReviveCap = ecs.getEntitiesWithQuery(['ally']).length >= ecs.getResource('softSquadCap');
 
   const heal = () => {
     if (ecs.getResource('coins') < SHOP.HEAL_COST) return;
@@ -63,14 +54,6 @@ export function renderShop(root: HTMLElement, ecs: GameEngine, onChange: () => v
     renderShop(root, ecs, onChange);
   };
 
-  const doReroll = () => {
-    if (ecs.getResource('coins') < SHOP.REROLL_COST) return;
-    ecs.setResource('coins', ecs.getResource('coins') - SHOP.REROLL_COST);
-    rerollShopOffers(ecs);
-    onChange();
-    renderShop(root, ecs, onChange);
-  };
-
   const continueRun = () => {
     startWave(ecs, nextWave, false);
     onChange();
@@ -86,22 +69,11 @@ export function renderShop(root: HTMLElement, ecs: GameEngine, onChange: () => v
           <button ?disabled=${coins < SHOP.HEAL_COST} @click=${heal}>
             Heal (+${SHOP.HEAL_AMOUNT} HP) — ${SHOP.HEAL_COST}🪙
           </button>
-          <button ?disabled=${coins < SHOP.REVIVE_COST || tokens < 1} @click=${revive}>
+          <button ?disabled=${coins < SHOP.REVIVE_COST || tokens < 1 || atReviveCap} @click=${revive}>
             Revive one (token + ${SHOP.REVIVE_COST}🪙)
           </button>
-          <button ?disabled=${coins < SHOP.REROLL_COST} @click=${doReroll}>
-            Reroll offers — ${SHOP.REROLL_COST}🪙
-          </button>
         </div>
-        <div class="shop-offers">
-          <p class="muted">Offer preview (flavor / next-wave cue):</p>
-          <ul>
-            ${offers.map(id => {
-              const a = archetype(id);
-              return html`<li><span style="color:${a.color}">●</span> ${a.name} — ${a.role}</li>`;
-            })}
-          </ul>
-        </div>
+        ${atReviveCap ? html`<p class="muted">Shop revives require fewer than ${ecs.getResource('softSquadCap')} allies. Level-up recruits have no limit.</p>` : html``}
         <button class="primary" @click=${continueRun}>Continue to Wave ${nextWave}</button>
       </div>
     `,

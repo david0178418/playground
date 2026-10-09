@@ -1,4 +1,4 @@
-import { ALLY, DOOR, ENEMY, PLAYER, RECRUIT, SCAVENGE } from '../config';
+import { ALLY, DOOR, ENEMY, PLAYER, SCAVENGE } from '../config';
 import { archetype, type ArchetypeId } from '../data/archetypes';
 import type { GameEngine } from './Engine';
 import type { AllComponents } from './types';
@@ -93,26 +93,6 @@ export function createEnemy(
   } satisfies Partial<AllComponents>);
 }
 
-export function createRecruitCrate(
-  ecs: GameEngine,
-  x: number,
-  y: number,
-  archetypeId: ArchetypeId,
-): { id: number } {
-  const def = archetype(archetypeId);
-  return ecs.spawn({
-    position: { x, y },
-    recruitCrate: { archetypeId, claimed: false },
-    collider: { radius: RECRUIT.CRATE_RADIUS },
-    renderable: {
-      shape: 'crate',
-      color: RECRUIT.COLOR,
-      radius: RECRUIT.CRATE_RADIUS,
-      label: def.name,
-    },
-  } satisfies Partial<AllComponents>);
-}
-
 export function createScavengeToken(
   commands: GameEngine['commands'],
   x: number,
@@ -132,7 +112,7 @@ export function createScavengeToken(
   } satisfies Partial<AllComponents>);
 }
 
-export function createCoinDrop(
+export const createExperienceDrop = function (
   commands: GameEngine['commands'],
   x: number,
   y: number,
@@ -140,16 +120,15 @@ export function createCoinDrop(
 ): void {
   commands.spawn({
     position: { x, y },
-    coinDrop: { amount },
-    collider: { radius: 8 },
+    experienceDrop: { amount },
     renderable: {
-      shape: 'circle',
-      color: '#ffd54f',
-      radius: 7,
-      label: '',
+      shape: 'token',
+      color: '#4dd0e1',
+      radius: 8,
+      label: 'XP',
     },
   } satisfies Partial<AllComponents>);
-}
+};
 
 export function createDoor(ecs: GameEngine, x: number, y: number): { id: number } {
   return ecs.spawn({

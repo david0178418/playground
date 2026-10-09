@@ -8,13 +8,13 @@ export type TimerSlot = 'attack' | 'enemyAttack' | 'lifetime';
 
 export type GameTimer = Timer<TimerSlot>;
 
-export type RunPhase = 'playing' | 'shop' | 'won' | 'lost';
+export type RunPhase = 'playing' | 'levelUp' | 'shop' | 'won' | 'lost';
 
 export interface Components {
   position: { x: number; y: number };
   velocity: { x: number; y: number };
   renderable: {
-    shape: 'circle' | 'rect' | 'crate' | 'token' | 'door' | 'unit';
+    shape: 'circle' | 'rect' | 'token' | 'door' | 'unit';
     color: string;
     radius?: number;
     width?: number;
@@ -56,15 +56,11 @@ export interface Components {
     lifetime: number;
     fromAlly: boolean;
   };
-  recruitCrate: {
-    archetypeId: ArchetypeId;
-    claimed: boolean;
-  };
   scavengeToken: {
     archetypeId: ArchetypeId;
     banked: boolean;
   };
-  coinDrop: {
+  experienceDrop: {
     amount: number;
   };
   door: {
@@ -94,14 +90,17 @@ export interface Resources {
   waveDuration: number;
   coins: number;
   bankedTokens: number;
+  progression: {
+    level: number;
+    experience: number;
+    choices: ArchetypeId[];
+  };
   softSquadCap: number;
   cameraX: number;
   frontX: number;
   spawnAheadAccumulator: number;
   rearNextAt: number;
   doorOpen: boolean;
-  /** Shop offer slot archetypes (rerollable flavor stubs) */
-  shopOffers: ArchetypeId[];
   stats: RunStats;
   /** Pending end reason */
   endReason: string;

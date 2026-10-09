@@ -1,10 +1,11 @@
 import { html, render } from 'lit-html';
 import type { GameEngine } from '../ecs/Engine';
+import { experienceForLevel } from '../ecs/progression';
 import { waveDef } from '../data/waves';
 
 export function renderHud(root: HTMLElement, ecs: GameEngine): void {
   const phase = ecs.getResource('phase');
-  if (phase !== 'playing') {
+  if (phase !== 'playing' && phase !== 'levelUp') {
     render(html``, root);
     return;
   }
@@ -14,6 +15,8 @@ export function renderHud(root: HTMLElement, ecs: GameEngine): void {
   const elapsed = ecs.getResource('waveElapsed');
   const duration = ecs.getResource('waveDuration');
   const remaining = Math.max(0, duration - elapsed);
+  const progression = ecs.getResource('progression');
+  const cost = experienceForLevel(progression.level);
   const coins = ecs.getResource('coins');
   const tokens = ecs.getResource('bankedTokens');
   const doorOpen = ecs.getResource('doorOpen');
@@ -36,13 +39,15 @@ export function renderHud(root: HTMLElement, ecs: GameEngine): void {
         </div>
         <div class="hud-row">
           <span>HP ${playerHp}</span>
-          <span>Squad ${stats.alliesAlive}/${ecs.getResource('softSquadCap')}</span>
+          <span>Squad ${stats.alliesAlive}</span>
           <span>🪙 ${coins}</span>
           <span>TOK ${tokens}</span>
         </div>
+        <div class="hud-row"><span>Level ${progression.level}</span><span>${progression.experience} / ${cost} XP</span></div>
+        <progress class="experience-bar" aria-label="Experience to next level" max=${cost} value=${progression.experience}></progress>
         <div class="hud-hint">${wave.blurb}</div>
-        <div class="hud-hint keyboard-hint">WASD/Arrows move · yellow crates recruit · purple tokens bank · push right to door</div>
-        <div class="hud-hint mobile-hint">Auto-fire · yellow crates recruit · purple tokens bank · push right to door</div>
+        <div class="hud-hint keyboard-hint">WASD/Arrows move · cyan gems give XP · level up to recruit · push right to door</div>
+        <div class="hud-hint mobile-hint">Auto-fire · cyan gems give XP · level up to recruit · push right to door</div>
       </div>
     `,
     root,

@@ -2,7 +2,6 @@ import ECSpresso, { type SystemRegistrarOf } from 'ecspresso';
 import { createInputPlugin } from 'ecspresso/plugins/input/input';
 import { createTimerPlugin } from 'ecspresso/plugins/scripting/timers';
 import { SOFT_SQUAD_CAP, WAVE_DURATION_SEC } from '../config';
-import type { ArchetypeId } from '../data/archetypes';
 import type { Components, GameAction, Resources, TimerSlot } from './types';
 import { keyboardActionMap } from './inputMap';
 
@@ -11,7 +10,10 @@ const timerPlugin = createTimerPlugin<TimerSlot>({ priority: 10 });
 const inputPlugin = createInputPlugin<GameAction>({
   actions: keyboardActionMap(),
   players: { keyboard: keyboardActionMap() },
-  preventDefaultKeys: ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Enter'],
+  shouldPreventDefault: function (event) {
+    if (event.target instanceof Element && event.target.closest('button, a, input, textarea, select')) return false;
+    return event instanceof KeyboardEvent && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Enter'].includes(event.key);
+  },
 });
 
 const initialStats = (): Resources['stats'] => ({
@@ -36,13 +38,13 @@ export function createGameEngine() {
   .withResource('waveDuration', WAVE_DURATION_SEC)
   .withResource('coins', 0)
   .withResource('bankedTokens', 0)
+  .withResource('progression', { level: 1, experience: 0, choices: [] })
   .withResource('softSquadCap', SOFT_SQUAD_CAP)
   .withResource('cameraX', 0)
   .withResource('frontX', 200)
   .withResource('spawnAheadAccumulator', 0)
   .withResource('rearNextAt', 55)
   .withResource('doorOpen', false)
-  .withResource('shopOffers', ['rifleman', 'breacher', 'marksman'] as ArchetypeId[])
   .withResource('stats', initialStats())
   .withResource('endReason', '')
   .withRequired('player', 'timers', () => ({}))

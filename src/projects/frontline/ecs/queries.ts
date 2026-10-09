@@ -16,16 +16,12 @@ export const projectileQuery = {
   with: ['projectile', 'position'] as const satisfies readonly (keyof AllComponents)[],
 };
 
-export const crateQuery = {
-  with: ['recruitCrate', 'position'] as const satisfies readonly (keyof AllComponents)[],
-};
-
 export const tokenQuery = {
   with: ['scavengeToken', 'position'] as const satisfies readonly (keyof AllComponents)[],
 };
 
-export const coinQuery = {
-  with: ['coinDrop', 'position'] as const satisfies readonly (keyof AllComponents)[],
+export const experienceQuery = {
+  with: ['experienceDrop', 'position'] as const satisfies readonly (keyof AllComponents)[],
 };
 
 export const doorQuery = {
